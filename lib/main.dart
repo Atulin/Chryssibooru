@@ -9,10 +9,11 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Flutter Demo',
+      title: 'Chryssibooru',
       theme: ThemeData(
+        brightness: Brightness.dark,
         primarySwatch: Colors.teal,
-        backgroundColor: Colors.black54
+        fontFamily: 'Montserrat',
       ),
       home: MyHomePage(title: 'Flutter Demo Home Page'),
     );
@@ -38,33 +39,16 @@ class MyHomePage extends StatefulWidget {
 }
 
 class _MyHomePageState extends State<MyHomePage> {
-  int _counter = 0;
-
-  void _incrementCounter() {
-    setState(() {
-      // This call to setState tells the Flutter framework that something has
-      // changed in this State, which causes it to rerun the build method below
-      // so that the display can reflect the updated values. If we changed
-      // _counter without calling setState(), then the build method would not be
-      // called again, and so nothing would appear to happen.
-      _counter++;
-    });
-  }
+  bool _safe = true;
+  bool _questionable = false;
+  bool _explicit = false;
 
   @override
   Widget build(BuildContext context) {
-    // This method is rerun every time setState is called, for instance as done
-    // by the _incrementCounter method above.
-    //
-    // The Flutter framework has been optimized to make rerunning build methods
-    // fast, so that you can just rebuild anything that needs updating rather
-    // than having to individually change instances of widgets.
     return Scaffold(
-      appBar: AppBar(
-        // Here we take the value from the MyHomePage object that was created by
-        // the App.build method, and use it to set our appbar title.
-        title: Text(widget.title),
-      ),
+//      appBar: AppBar(
+//        title: Text(widget.title),
+//      ),
       body: Center(
         // Center is a layout widget. It takes a single child and positions it
         // in the middle of the parent.
@@ -72,32 +56,30 @@ class _MyHomePageState extends State<MyHomePage> {
           mainAxisAlignment: MainAxisAlignment.center,
           children: <Widget>[
             FutureBuilder<List<Derpi>>(
-              future: fetchDerpi(
-                  "https://derpibooru.org/search.json?q=pinkie+pie"),
+              future:
+                  fetchDerpi("https://derpibooru.org/search.json?q=pinkie+pie"),
               builder: (context, snapshot) {
                 if (snapshot.hasData) {
                   return new Expanded(
                       child: new GridView.builder(
-                        itemCount: snapshot.data.length,
-                        gridDelegate: new SliverGridDelegateWithMaxCrossAxisExtent(
-                          maxCrossAxisExtent: 200.0,
-                          childAspectRatio: 1.0,
-                          crossAxisSpacing: 4.0,
-                          mainAxisSpacing: 4.0
+                    itemCount: snapshot.data.length,
+                    gridDelegate: new SliverGridDelegateWithMaxCrossAxisExtent(
+                        maxCrossAxisExtent: 200.0,
+                        childAspectRatio: 1.0,
+                        crossAxisSpacing: 4.0,
+                        mainAxisSpacing: 4.0),
+                    itemBuilder: (BuildContext context, int index) {
+                      return new GestureDetector(
+                        onTap: () {},
+                        child: new Card(
+                          child: Padding(
+                            padding: EdgeInsets.all(0.2),
+                            child: new Text(snapshot.data[index].fileName),
+                          ),
                         ),
-                        itemBuilder: (BuildContext context, int index) {
-                          return new GestureDetector(
-                            onTap: () {},
-                            child: new Card(
-                              child: Padding(
-                                padding: EdgeInsets.all(0.2),
-                                child: new Text(snapshot.data[index].fileName),
-                              ),
-                            ),
-                          );
-                        },
-                      )
-                  );
+                      );
+                    },
+                  ));
                 } else if (snapshot.hasError) {
                   return Text("${snapshot.error}");
                 }
@@ -109,11 +91,84 @@ class _MyHomePageState extends State<MyHomePage> {
           ],
         ),
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: _incrementCounter,
-        tooltip: 'Increment',
-        child: Icon(Icons.add),
+      bottomNavigationBar: BottomAppBar(
+        child: new Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: <Widget>[
+            IconButton(
+              icon: new Icon(Icons.menu),
+              onPressed: () {},
+            ),
+            Expanded(
+              child: TextField(
+                decoration: InputDecoration(
+                    border: InputBorder.none,
+                    hintText: 'Please enter a search term'),
+              ),
+            ),
+            IconButton(
+              icon: new Icon(Icons.filter_list),
+              onPressed: () {
+                filterSheet();
+              },
+            ),
+          ],
+        ),
       ), // This trailing comma makes auto-formatting nicer for build methods.
     );
   }
+
+  // BOTTOM SHEET
+  void filterSheet() {
+    showModalBottomSheet<void>(
+        context: context,
+        builder: (BuildContext context) {
+          return new Column(
+            mainAxisSize: MainAxisSize.min,
+            children: <Widget>[
+              new CheckboxListTile(
+                title: new Text('Safe'),
+                value: _safe,
+                onChanged: (bool newValue) {
+                  setState(() {
+                    _safe = newValue;
+                  });
+                },
+                dense: true,
+              ),
+              new CheckboxListTile(
+                title: new Text('Questionable'),
+                value: _questionable,
+                onChanged: (bool newValue) {
+                  setState(() {
+                    _questionable = newValue;
+                  });
+                },
+                dense: true,
+              ),
+              new CheckboxListTile(
+                title: new Text('Explicit'),
+                value: _explicit,
+                onChanged: (bool newValue) {
+                  setState(() {
+                    _explicit = newValue;
+                  });
+                },
+                dense: true,
+              ),
+              new ListTile(
+                leading: new Icon(Icons.photo_album),
+                title: new Text('Photos'),
+                onTap: () => () {},
+              ),
+              new ListTile(
+                leading: new Icon(Icons.videocam),
+                title: new Text('Video'),
+                onTap: () => () {},
+              ),
+            ],
+          );
+        });
+  }
+
 }
