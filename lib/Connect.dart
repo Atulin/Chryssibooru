@@ -9,7 +9,7 @@ Future<List<Derpi>> fetchDerpi(url) async {
   if (response.statusCode == 200) {
     Iterable i = json.decode(response.body)['search'];
     List<Derpi> derpis = i.map((dynamic) => Derpi.fromJson(dynamic)).toList();
-    return derpis;// Derpi.fromJson(json.decode(response.body)['search']);
+    return derpis;
   } else {
     throw Exception('Failed to load posts');
   }

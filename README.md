@@ -1,16 +1,28 @@
-# chryssibooru
+# Chryssibooru
 
 Derpibooru client made with Flutter
 
-## Getting Started
+## Todo
 
-This project is a starting point for a Flutter application.
+ * Displaying more than the first page
+ * Displaying videos
+ * App settings (theme perhaps?)
+ 
+## Wontdo
 
-A few resources to get you started if this is your first Flutter project:
+ * Likes
+ * Favourites
+ * Comments
+ * Anything that requires the user to log in, since Derpibooru API does not support it
 
-- [Lab: Write your first Flutter app](https://flutter.io/docs/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://flutter.io/docs/cookbook)
+## Changelog
 
-For help getting started with Flutter, view our 
-[online documentation](https://flutter.io/docs), which offers tutorials, 
-samples, guidance on mobile development, and a full API reference.
+* **12.12.2018**
+  * Initial commit
+  
+* **13.12.2018**
+  * Main layout created
+  
+* **03.05.2019**
+  * Images from the 1st page display properly
+  * Searching by tags works
