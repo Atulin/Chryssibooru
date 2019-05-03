@@ -10,7 +10,7 @@ description: Derpibooru client made with Flutter
 version: 1.0.0+1
 
 environment:
-  sdk: ">=2.0.0-dev.68.0 <3.0.0"
+  sdk: ">=2.1.0 <3.0.0"
 
 dependencies:
   flutter:
@@ -23,6 +23,8 @@ dependencies:
   http: ^0.12.0
 
   cached_network_image: ^0.7.0
+
+  shared_preferences: ^0.5.2
 
 #  webview_flutter: ^0.3.6
 
@@ -44,9 +46,8 @@ flutter:
   uses-material-design: true
 
   # To add assets to your application, add an assets section, like this:
-  # assets:
-  #  - images/a_dot_burr.jpeg
-  #  - images/a_dot_ham.jpeg
+  assets:
+    - assets/logo.png
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.io/assets-and-images/#resolution-aware.

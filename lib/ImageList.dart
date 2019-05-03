@@ -3,7 +3,7 @@ import 'package:chryssibooru/Connect.dart';
 import 'package:flutter/foundation.dart';
 
 
-Future<List<Derpi>> searchImages(String query, bool s, bool q, bool e, [int page = 1]) {
+Future<List<Derpi>> searchImages(String query, bool s, bool q, bool e, String key, [int page = 1]) {
   const api_url = "https://derpibooru.org/search.json?";
 
   var ratingsArr = [];
@@ -12,11 +12,11 @@ Future<List<Derpi>> searchImages(String query, bool s, bool q, bool e, [int page
   if (e) ratingsArr.add("explicit");
   var ratings = ratingsArr.join(" OR ");
 
-  var escapedQuery = query.replaceAll(" ", "+");
 
-  var queryString = api_url + "q=" + escapedQuery + ", " + ratings + "&page=" + page.toString();
+  var queryString = api_url + "q=" + query + "%2C (" + ratings + ")&page=" + page.toString() + "&key=" + key;
+  var escapedQuery = queryString.replaceAll(" ", "+");
 
-  debugPrint(queryString);
+  debugPrint(escapedQuery);
 
-  return fetchDerpi(queryString);
+  return fetchDerpi(escapedQuery);
 }

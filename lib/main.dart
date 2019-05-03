@@ -1,7 +1,10 @@
+import 'dart:async';
+
 import 'package:chryssibooru/API.dart';
 import 'package:chryssibooru/ImageList.dart';
 import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 void main() => runApp(MyApp());
 
@@ -42,6 +45,8 @@ class MyHomePage extends StatefulWidget {
 class _MyHomePageState extends State<MyHomePage> {
   ScrollController _scrollController;
 
+  String _key = "";
+
   bool _safe = true;
   bool _questionable = false;
   bool _explicit = false;
@@ -50,7 +55,7 @@ class _MyHomePageState extends State<MyHomePage> {
 
   int _page = 1;
 
-  Future<List<Derpi>> _derpis = searchImages("pinkie pie", true, false, false);//fetchDerpi("https://derpibooru.org/search.json?q=pinkie+pie");
+  Future<List<Derpi>> _derpis;
 
   @override
   void initState() {
@@ -67,12 +72,23 @@ class _MyHomePageState extends State<MyHomePage> {
 
   void _loadDerpis() {
     setState(() {
-      _derpis = searchImages(_query, _safe, _questionable, _explicit, _page);
+      _derpis = searchImages(_query, _safe, _questionable, _explicit, _key, _page);
     });
+  }
+
+  void _saveKey(String key) async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    await prefs.setString("key", key);
+  }
+
+  void _getKey() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    _key = prefs.getString("key");
   }
 
   @override
   Widget build(BuildContext context) {
+    _getKey();
     return Scaffold(
 //      appBar: AppBar(
 //        title: Text(widget.title),
@@ -91,7 +107,7 @@ class _MyHomePageState extends State<MyHomePage> {
                     child: new GridView.builder(
                       controller: _scrollController,
                       itemCount: snapshot.data.length,
-                      cacheExtent: 1.0,
+                      cacheExtent: 0.5,
                       physics: BouncingScrollPhysics(),
                       gridDelegate: new SliverGridDelegateWithMaxCrossAxisExtent(
                         maxCrossAxisExtent: 200.0,
@@ -108,7 +124,7 @@ class _MyHomePageState extends State<MyHomePage> {
                                 borderRadius: new BorderRadius.all(Radius.circular(10.0)),
                                 child: new CachedNetworkImage(
                                   imageUrl: "https:"+snapshot.data[index].representations.medium,
-                                  placeholder: (context, url) => new CircularProgressIndicator(),
+                                  placeholder: (context, url) => new Image(image: AssetImage('assets/logo.png')),
                                   errorWidget: (context, url, error) => new Icon(Icons.error),
                                   fit: BoxFit.cover,
                                 ),
@@ -130,7 +146,7 @@ class _MyHomePageState extends State<MyHomePage> {
                 }
 
                 // By default, show a loading spinner
-                return CircularProgressIndicator();
+                return new Image(image: AssetImage('assets/logo.png'));
               },
             ),
           ],
@@ -219,6 +235,16 @@ class _MyHomePageState extends State<MyHomePage> {
                 title: new Text('Video'),
                 onTap: () => () {},
               ),
+              new TextField(
+                decoration: InputDecoration(
+                    border: InputBorder.none,
+                    hintText: 'Enter your API key'
+                ),
+                onSubmitted: (text) {
+                  _saveKey(text);
+
+                },
+              )
             ],
           );
         });

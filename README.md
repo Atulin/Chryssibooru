@@ -24,5 +24,7 @@ Derpibooru client made with Flutter
   * Main layout created
   
 * **03.05.2019**
+  * Added the logo image
   * Images from the 1st page display properly
-  * Searching by tags works
+  * Searching by tags and ratings works
+  * Added support for the API key to allow for browsing of NSFW images
