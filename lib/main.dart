@@ -124,7 +124,7 @@ class _MyHomePageState extends State<MyHomePage> {
                                 borderRadius: new BorderRadius.all(Radius.circular(10.0)),
                                 child: new CachedNetworkImage(
                                   imageUrl: "https:"+snapshot.data[index].representations.medium,
-                                  placeholder: (context, url) => new Image(image: AssetImage('assets/logo.png')),
+                                  placeholder: (context, url) => new Image(image: AssetImage('assets/logo-medium.png')),
                                   errorWidget: (context, url, error) => new Icon(Icons.error),
                                   fit: BoxFit.cover,
                                 ),
@@ -146,7 +146,7 @@ class _MyHomePageState extends State<MyHomePage> {
                 }
 
                 // By default, show a loading spinner
-                return new Image(image: AssetImage('assets/logo.png'));
+                return new Image(image: AssetImage('assets/logo-xlarge.png'));
               },
             ),
           ],
