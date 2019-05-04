@@ -3,7 +3,7 @@ import 'dart:convert';
 import 'package:chryssibooru/API.dart';
 import 'package:http/http.dart' as http;
 
-Future<List<Derpi>> fetchDerpi(url) async {
+Future<List<Derpi>> fetchDerpi(String url) async {
   final response = await http.get(url);
 
   if (response.statusCode == 200) {

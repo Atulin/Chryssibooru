@@ -83,7 +83,7 @@ class _MyHomePageState extends State<MyHomePage> {
 
   void _getKey() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
-    _key = prefs.getString("key");
+    _key = prefs.getString("key") ?? "";
   }
 
   @override
@@ -160,7 +160,7 @@ class _MyHomePageState extends State<MyHomePage> {
             children: <Widget>[
               IconButton(
                 icon: new Icon(Icons.menu),
-                onPressed: () {},
+                onPressed: () {_query = "pinkie pie"; _loadDerpis();},
               ),
               Expanded(
                 child: TextField(

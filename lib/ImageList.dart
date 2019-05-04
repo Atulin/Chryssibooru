@@ -13,7 +13,12 @@ Future<List<Derpi>> searchImages(String query, bool s, bool q, bool e, String ke
   var ratings = ratingsArr.join(" OR ");
 
 
-  var queryString = api_url + "q=" + query + "%2C (" + ratings + ")&page=" + page.toString() + "&key=" + key;
+  var queryString = api_url + "q=" + query;
+
+  if (!((s&&q&&e)||!(s&&q&&e))) queryString += "%2C (" + ratings + ")";
+                                queryString += "&page=" + page.toString();
+  if (key != "" || key != null) queryString += "&key=" + key;
+
   var escapedQuery = queryString.replaceAll(" ", "+");
 
   debugPrint(escapedQuery);
