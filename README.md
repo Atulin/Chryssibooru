@@ -4,7 +4,6 @@ Derpibooru client made with Flutter
 
 ## Todo
 
- * Displaying more than the first page
  * Webm support
  * Swiping gallery view
  * App settings (theme perhaps?)
@@ -17,6 +16,11 @@ Derpibooru client made with Flutter
  * Anything that requires the user to log in, since Derpibooru API does not support it
 
 ## Changelog
+  
+* **26.05.2019**
+  * Grid of images now properly loads further pages
+  * API key input moved to app drawer
+  * Yeah, there's an app drawer now! Fancy that!
   
 * **04.05.2019**
   * Modified the logo to look better

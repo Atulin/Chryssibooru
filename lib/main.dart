@@ -43,7 +43,9 @@ class MyHomePage extends StatefulWidget {
 }
 
 class _MyHomePageState extends State<MyHomePage> {
+  GlobalKey<ScaffoldState> _scaffoldKey = new GlobalKey();
   ScrollController _scrollController;
+  bool _loaded = false;
 
   String _key = "";
 
@@ -55,7 +57,7 @@ class _MyHomePageState extends State<MyHomePage> {
 
   int _page = 1;
 
-  Future<List<Derpi>> _derpis;
+  List<Derpi> _derpis = new List<Derpi>();
 
   @override
   void initState() {
@@ -65,15 +67,19 @@ class _MyHomePageState extends State<MyHomePage> {
   }
 
   void _loadDerpisListener() {
-    if (_scrollController.offset >= _scrollController.position.maxScrollExtent && !_scrollController.position.outOfRange) {
+    if (_scrollController.position.maxScrollExtent - _scrollController.offset < 400.0 && !_scrollController.position.outOfRange && _loaded) {
       _loadDerpis();
+      _page++;
     }
   }
 
-  void _loadDerpis() {
+  void _loadDerpis() async {
+    _loaded = false;
+    final newImages = await searchImages(_query, _safe, _questionable, _explicit, _key, _page);
     setState(() {
-      _derpis = searchImages(_query, _safe, _questionable, _explicit, _key, _page);
+      _derpis.addAll(newImages);
     });
+    _loaded = true;
   }
 
   void _saveKey(String key) async {
@@ -86,34 +92,33 @@ class _MyHomePageState extends State<MyHomePage> {
     _key = prefs.getString("key") ?? "";
   }
 
+
   @override
   Widget build(BuildContext context) {
     _getKey();
     return Scaffold(
-//      appBar: AppBar(
-//        title: Text(widget.title),
-//      ),
+      key: _scaffoldKey,
       body: Center(
         // Center is a layout widget. It takes a single child and positions it
         // in the middle of the parent.
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: <Widget>[
-            FutureBuilder<List<Derpi>>(
-              future: _derpis,// fetchDerpi("https://derpibooru.org/search.json?q=pinkie+pie"),
-              builder: (context, snapshot) {
-                if (snapshot.hasData) {
-                  return new Expanded(
-                    child: new GridView.builder(
+            new Expanded(
+                child: (){
+                  if (_derpis.length <= 0) {
+                    return new Image(image: AssetImage('assets/logo-medium.png'));
+                  } else {
+                    return new GridView.builder(
                       controller: _scrollController,
-                      itemCount: snapshot.data.length,
+                      itemCount: _derpis.length,
                       cacheExtent: 0.5,
                       physics: BouncingScrollPhysics(),
                       gridDelegate: new SliverGridDelegateWithMaxCrossAxisExtent(
-                        maxCrossAxisExtent: 200.0,
-                        childAspectRatio: 1.0,
-                        crossAxisSpacing: 4.0,
-                        mainAxisSpacing: 4.0),
+                          maxCrossAxisExtent: 200.0,
+                          childAspectRatio: 1.0,
+                          crossAxisSpacing: 4.0,
+                          mainAxisSpacing: 4.0),
                       itemBuilder: (BuildContext context, int index) {
                         return new GestureDetector(
                           onTap: () {},
@@ -121,34 +126,25 @@ class _MyHomePageState extends State<MyHomePage> {
                             child: Padding(
                               padding: EdgeInsets.all(0.2),
                               child: ClipRRect(
-                                borderRadius: new BorderRadius.all(Radius.circular(10.0)),
+                                borderRadius:new BorderRadius.all(Radius.circular(10.0)),
                                 child: new CachedNetworkImage(
-                                  imageUrl: "https:"+snapshot.data[index].representations.medium,
+                                  imageUrl:"https:" + _derpis[index].representations.thumb,
                                   placeholder: (context, url) => new Image(image: AssetImage('assets/logo-medium.png')),
                                   errorWidget: (context, url, error) => new Icon(Icons.error),
                                   fit: BoxFit.cover,
                                 ),
                               ),
                             ),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.all(
-                                Radius.circular(10.0)
-                              )
-                            ),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(10.0))),
                             elevation: 5,
                           ),
                         );
                       },
-                    )
-                  );
-                } else if (snapshot.hasError) {
-                  return Text("${snapshot.error}");
-                }
+                    );
+                  }
+                }()
 
-                // By default, show a loading spinner
-                return new Image(image: AssetImage('assets/logo-xlarge.png'));
-              },
-            ),
+            )
           ],
         ),
       ),
@@ -160,17 +156,22 @@ class _MyHomePageState extends State<MyHomePage> {
             children: <Widget>[
               IconButton(
                 icon: new Icon(Icons.menu),
-                onPressed: () {_query = "pinkie pie"; _loadDerpis();},
+                onPressed: () {
+                  _scaffoldKey.currentState.openDrawer();
+                },
               ),
               Expanded(
                 child: TextField(
                   decoration: InputDecoration(
                       border: InputBorder.none,
-                      hintText: 'Please enter a search term'
-                  ),
+                      hintText: 'Please enter a search term'),
                   onSubmitted: (text) {
-                    _query = text;
-                    _loadDerpis();
+                    if (text != _query) {
+                      _derpis = new List<Derpi>();
+                      _page = 1;
+                      _query = text;
+                      _loadDerpis();
+                    }
                   },
                 ),
               ),
@@ -184,6 +185,24 @@ class _MyHomePageState extends State<MyHomePage> {
           ),
         ),
       ), // This trailing comma makes auto-formatting nicer for build methods.
+
+      drawer: Drawer(
+        child: ListView(
+          children: <Widget>[
+            DrawerHeader(
+              child: Image(image: AssetImage('assets/logo-medium.png')),
+              decoration: BoxDecoration(
+                color: Color.fromARGB(255, 15, 84, 108)
+              ),
+            ),
+            ListTile(
+              title: Text("Enter API key"),
+              subtitle: Text("Get it on Derpibooru in account settings", style: TextStyle(fontSize: 10.0)),
+              onTap: showKeySheet,
+            )
+          ],
+        ),
+      ),
     );
   }
 
@@ -235,18 +254,29 @@ class _MyHomePageState extends State<MyHomePage> {
                 title: new Text('Video'),
                 onTap: () => () {},
               ),
-              new TextField(
-                decoration: InputDecoration(
-                    border: InputBorder.none,
-                    hintText: 'Enter your API key'
-                ),
-                onSubmitted: (text) {
-                  _saveKey(text);
-
-                },
-              )
             ],
           );
         });
+  }
+
+  void showKeySheet() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+      showModalBottomSheet<void>(
+      context: _scaffoldKey.currentContext,
+      builder: (BuildContext context) {
+        return Padding(padding: EdgeInsets.fromLTRB(10.0, 1.0, 10.0, MediaQuery.of(context).viewInsets.bottom),
+          child: new TextField(
+            decoration: InputDecoration(
+              border: InputBorder.none,
+              hintText: prefs.getString("key") ?? ""
+            ),
+            onSubmitted: (text) {
+              _saveKey(text);
+            },
+            autofocus: true,
+          ),
+        );
+      }
+    );
   }
 }
