@@ -22,7 +22,9 @@ Future<List<Derpi>> searchImages(String query, bool s, bool q, bool e, String ke
 
   var escapedQuery = queryString.replaceAll(" ", "+");
 
-  debugPrint(escapedQuery);
+  var derpis = fetchDerpi(escapedQuery);
 
-  return fetchDerpi(escapedQuery);
+  debugPrint(derpis != null ? escapedQuery : 'End of results');
+
+  return derpis;
 }

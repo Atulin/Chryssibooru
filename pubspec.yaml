@@ -26,6 +26,8 @@ dependencies:
 
   shared_preferences: ^0.5.2
 
+  provider: ^2.0.1+1
+
 #  webview_flutter: ^0.3.6
 
 

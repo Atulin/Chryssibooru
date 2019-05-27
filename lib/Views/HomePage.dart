@@ -1,8 +1,9 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:chryssibooru/API.dart';
-import 'package:chryssibooru/ImageList.dart';
+import 'package:chryssibooru/DerpisRepo.dart';
 import 'package:chryssibooru/Views/ImageViewer.dart';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 
@@ -20,20 +21,18 @@ class HomePage extends StatefulWidget {
 
 class HomePageState extends State<HomePage> {
   GlobalKey<ScaffoldState> _scaffoldKey = new GlobalKey();
+
   ScrollController _scrollController;
-  bool _loaded = false;
+  double lastScrollPosition = 0.0;
 
-  String _key = "";
+  DerpisRepo repo;
 
-  bool _safe = true;
-  bool _questionable = false;
-  bool _explicit = false;
+  @override
+  didChangeDependencies() {
+    repo = Provider.of<DerpisRepo>(context);
 
-  String _query = "";
-
-  int _page = 1;
-
-  List<Derpi> _derpis = new List<Derpi>();
+    super.didChangeDependencies();
+  }
 
   @override
   void initState() {
@@ -43,19 +42,14 @@ class HomePageState extends State<HomePage> {
   }
 
   void _loadDerpisListener() {
-    if (_scrollController.position.maxScrollExtent - _scrollController.offset < 400.0 && !_scrollController.position.outOfRange && _loaded) {
-      _loadDerpis();
-      _page++;
+    if (_scrollController.position.maxScrollExtent - _scrollController.offset < 400.0
+        && !_scrollController.position.outOfRange
+        && repo.loaded) {
+      repo.page++;
+      setState(() {
+        repo.loadDerpis();
+      });
     }
-  }
-
-  void _loadDerpis() async {
-    _loaded = false;
-    final newImages = await searchImages(_query, _safe, _questionable, _explicit, _key, _page);
-    setState(() {
-      _derpis.addAll(newImages);
-    });
-    _loaded = true;
   }
 
   void _saveKey(String key) async {
@@ -65,13 +59,14 @@ class HomePageState extends State<HomePage> {
 
   void _getKey() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
-    _key = prefs.getString("key") ?? "";
+    repo.key = prefs.getString("key") ?? "";
   }
 
 
   @override
   Widget build(BuildContext context) {
     _getKey();
+
     return Scaffold(
       key: _scaffoldKey,
       body: Center(
@@ -82,12 +77,12 @@ class HomePageState extends State<HomePage> {
           children: <Widget>[
             new Expanded(
                 child: (){
-                  if (_derpis.length <= 0) {
+                  if (repo.derpis == null) {
                     return new Image(image: AssetImage('assets/logo-medium.png'));
                   } else {
                     return new GridView.builder(
                       controller: _scrollController,
-                      itemCount: _derpis.length,
+                      itemCount: repo.derpis.length,
                       cacheExtent: 0.5,
                       physics: BouncingScrollPhysics(),
                       gridDelegate: new SliverGridDelegateWithMaxCrossAxisExtent(
@@ -104,7 +99,7 @@ class HomePageState extends State<HomePage> {
                               child: ClipRRect(
                                 borderRadius:new BorderRadius.all(Radius.circular(10.0)),
                                 child: new CachedNetworkImage(
-                                  imageUrl:"https:" + _derpis[index].representations.thumb,
+                                  imageUrl:"https:" + repo.derpis[index].representations.thumb,
                                   placeholder: (context, url) => new Image(image: AssetImage('assets/logo-medium.png')),
                                   errorWidget: (context, url, error) => new Icon(Icons.error),
                                   fit: BoxFit.cover,
@@ -116,7 +111,7 @@ class HomePageState extends State<HomePage> {
                           ),
                           onTapDown: (_) {
                             debugPrint(_.toString());
-                            Route route = MaterialPageRoute(builder: (context) => ImageViewer(derpis: _derpis, initialIndex: index,));
+                            Route route = MaterialPageRoute(builder: (BuildContext context) {});
                             Navigator.push(context, route);
                           },
                         );
@@ -147,11 +142,11 @@ class HomePageState extends State<HomePage> {
                       border: InputBorder.none,
                       hintText: 'Please enter a search term'),
                   onSubmitted: (text) {
-                    if (text != _query) {
-                      _derpis = new List<Derpi>();
-                      _page = 1;
-                      _query = text;
-                      _loadDerpis();
+                    if (text != repo.query) {
+                      repo.derpis = new List<Derpi>();
+                      repo.page = 1;
+                      repo.setParams(text);
+                      repo.loadDerpis();
                     }
                   },
                 ),
@@ -197,30 +192,30 @@ class HomePageState extends State<HomePage> {
             children: <Widget>[
               new CheckboxListTile(
                 title: new Text('Safe'),
-                value: _safe,
+                value: repo.safe,
                 onChanged: (bool newValue) {
                   setState(() {
-                    _safe = newValue;
+                    repo.safe = newValue;
                   });
                 },
                 dense: true,
               ),
               new CheckboxListTile(
                 title: new Text('Questionable'),
-                value: _questionable,
+                value: repo.questionable,
                 onChanged: (bool newValue) {
                   setState(() {
-                    _questionable = newValue;
+                    repo.questionable = newValue;
                   });
                 },
                 dense: true,
               ),
               new CheckboxListTile(
                 title: new Text('Explicit'),
-                value: _explicit,
+                value: repo.explicit,
                 onChanged: (bool newValue) {
                   setState(() {
-                    _explicit = newValue;
+                    repo.explicit = newValue;
                   });
                 },
                 dense: true,

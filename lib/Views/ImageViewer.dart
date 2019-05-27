@@ -1,26 +1,32 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:chryssibooru/API.dart';
+import 'package:chryssibooru/DerpisRepo.dart';
 import 'package:flutter/material.dart';
+import 'package:path/path.dart';
+import 'package:provider/provider.dart';
 
 class ImageViewer extends StatefulWidget {
-  ImageViewer(
-      {Key key, @required this.derpis, @required this.initialIndex, this.title})
-      : super(key: key);
+  ImageViewer({Key key, this.title}) : super(key: key);
 
   final String title;
-  final List<Derpi> derpis;
-  final int initialIndex;
 
   @override
-  _ImageViewerState createState() => _ImageViewerState(derpis, initialIndex);
+  ImageViewerState createState() => ImageViewerState();
 }
 
-class _ImageViewerState extends State<ImageViewer> {
+class ImageViewerState extends State<ImageViewer> {
   List<Derpi> derpis = new List<Derpi>();
   int initialIndex = 0;
   int _id = 0;
 
-  _ImageViewerState(this.derpis, this.initialIndex) : super();
+  DerpisRepo repo;
+
+  @override
+  didChangeDependencies() {
+    repo = Provider.of<DerpisRepo>(context);
+
+    super.didChangeDependencies();
+  }
 
   PageController _controller = PageController(initialPage: 0, keepPage: false);
 
