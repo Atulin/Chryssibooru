@@ -13,12 +13,12 @@ class HomePage extends StatefulWidget {
   final String title;
 
   @override
-  _HomePageState createState() => _HomePageState();
+  HomePageState createState() => HomePageState();
 }
 
 
 
-class _HomePageState extends State<HomePage> {
+class HomePageState extends State<HomePage> {
   GlobalKey<ScaffoldState> _scaffoldKey = new GlobalKey();
   ScrollController _scrollController;
   bool _loaded = false;
@@ -114,10 +114,11 @@ class _HomePageState extends State<HomePage> {
                             shape: RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(10.0))),
                             elevation: 5,
                           ),
-                          onTapDown: () {
-                            Route route = MaterialPageRoute(builder: (context) => ImageViewer());
+                          onTapDown: (_) {
+                            debugPrint(_.toString());
+                            Route route = MaterialPageRoute(builder: (context) => ImageViewer(derpis: _derpis, initialIndex: index,));
                             Navigator.push(context, route);
-                          }(),
+                          },
                         );
                       },
                     );
