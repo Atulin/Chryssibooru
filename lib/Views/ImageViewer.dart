@@ -5,17 +5,21 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 class ImageViewer extends StatefulWidget {
-  ImageViewer({Key key, this.title}) : super(key: key);
+  ImageViewer({Key key, this.title, @required this.index}) : super(key: key);
 
   final String title;
+  final int index;
 
   @override
-  ImageViewerState createState() => ImageViewerState();
+  ImageViewerState createState() => ImageViewerState(initialIndex: index);
 }
 
 class ImageViewerState extends State<ImageViewer> {
+  final int initialIndex;
+
+  ImageViewerState({this.initialIndex});
+
   List<Derpi> derpis = new List<Derpi>();
-  int initialIndex = 0;
   int _id = 0;
 
   int descMaxLines = 3;
@@ -33,7 +37,7 @@ class ImageViewerState extends State<ImageViewer> {
 
   @override
   void initState() {
-    _pageController = PageController();
+    _pageController = PageController(initialPage: initialIndex);
     _pageController.addListener(_loadDerpisListener);
     super.initState();
   }
@@ -69,7 +73,7 @@ class ImageViewerState extends State<ImageViewer> {
                     );
                   } else {
                     return new Center(
-                      child: Text('WEBM'),
+                      child: Text(initialIndex.toString()),
                     );
                   }
                 }()
@@ -85,7 +89,7 @@ class ImageViewerState extends State<ImageViewer> {
       bottomNavigationBar: GestureDetector(
         child: BottomAppBar(
           child: Padding(
-            padding: EdgeInsets.symmetric(horizontal: 5.0),
+            padding: EdgeInsets.symmetric(horizontal: 5.0, vertical: 5.0),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: <Widget>[
@@ -97,62 +101,114 @@ class ImageViewerState extends State<ImageViewer> {
           ),
         ),
         onVerticalDragUpdate: (details) {
-          showModalBottomSheet(context: context, builder: (BuildContext context){
+          showModalBottomSheet(context: context, builder: (context){
             Derpi derpi = repo.derpis[_id];
             List<Tag> tags = derpi.tags;
-            return Padding(
-              padding: EdgeInsets.fromLTRB(10.0, 5.0, 10.0, 5.0),
-              child: Column(
-                children: <Widget>[
-                  Padding(
-                    padding: const EdgeInsets.all(8.0),
-                    child: Text('Uploader: ' + derpi.uploader),
+            return Column(
+              children: <Widget>[
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 1.0),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: <Widget>[
+                      Text(derpi.id.toString()),
+                      ButtonBar(
+                        children: <Widget>[
+                          Container(
+                            height: 30,
+                            width: 30,
+                            child: InkWell(
+                              borderRadius: BorderRadius.all(Radius.circular(50.0)),
+                              child: Icon(Icons.share),
+                              onTap: () {},
+                              onLongPress: (){
+                                showModalBottomSheet(context: context, builder: (BuildContext context){
+                                  return Padding(
+                                    padding: const EdgeInsets.all(8.0),
+                                    child: Text("Share"),
+                                  );
+                                });
+                              },
+                            ),
+                          ),
+                          Container(
+                            height: 30,
+                            width: 30,
+                            child: InkWell(
+                              borderRadius: BorderRadius.all(Radius.circular(50.0)),
+                              child: Icon(Icons.link),
+                              onTap: () {},
+                              onLongPress: (){
+                                showModalBottomSheet(context: context, builder: (BuildContext context){
+                                  return Padding(
+                                    padding: const EdgeInsets.all(8.0),
+                                    child: Text("Open in browser"),
+                                  );
+                                });
+                              },
+                            ),
+                          ),
+                          Container(
+                            height: 30,
+                            width: 30,
+                            child: InkWell(
+                              borderRadius: BorderRadius.all(Radius.circular(50.0)),
+                              child: Icon(Icons.content_copy),
+                              onTap: () {},
+                              onLongPress: (){
+                                showModalBottomSheet(context: context, builder: (BuildContext context){
+                                  return Padding(
+                                    padding: const EdgeInsets.all(8.0),
+                                    child: Text("Copy direct link"),
+                                  );
+                                });
+                              },
+                            ),
+                          )
+                        ],
+                      )
+                    ],
                   ),
-                  Padding(
-                    padding: const EdgeInsets.all(4.0),
+                ),
+                ConstrainedBox(
+                constraints: new BoxConstraints(
+                  maxHeight: 100.0
+                ),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 4.0),
                     child: SingleChildScrollView(
-                      child: GestureDetector(
-                        onTap: (){},
-                        child: Text(
-                          derpi.description,
-                          maxLines: descMaxLines,
-                          overflow: TextOverflow.fade,
-                        ),
+                      physics: BouncingScrollPhysics(),
+                      child: Text(
+                        derpi.description
                       ),
                     ),
                   ),
-                  Expanded(
+                ),
+                Expanded(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 4.0, vertical: 1.0),
                     child: SingleChildScrollView(
+                      physics: BouncingScrollPhysics(),
                       child: Wrap(
-                        spacing: 5.0,
-                        runSpacing: 5.0,
-                        children: List.generate(derpi.tags.length, (i){
-                            return new Chip(
-                              padding: EdgeInsets.all(0.0),
-                              label: Text(tags[i].label),
-                              backgroundColor: (){
-                                switch (tags[i].type){
-                                  case TagType.ARTIST:
-                                    return Color.fromARGB(255, 0, 0, 255);
-                                    break;
-                                  case TagType.OC:
-                                    return Color.fromARGB(255, 0, 255, 0);
-                                    break;
-                                  case TagType.SPOILER:
-                                    return Color.fromARGB(255, 255, 0, 0);
-                                    break;
-                                  default:
-                                    return Color.fromARGB(255, 150, 150, 150);
-                                    break;
-                                }
-                              }(),
-                            );
-                          }),
+                        spacing: 5,
+                        runSpacing: -5,
+                        children: [
+                          for (final tag in tags)
+                            Chip(
+                              padding: EdgeInsets.all(0),
+                              label: Text(tag.label),
+                              backgroundColor: {
+                                TagType.ARTIST: Colors.blue,
+                                TagType.OC: Colors.green,
+                                TagType.SPOILER: Colors.red,
+                              }[tag.type] ?? Colors.grey,
+                            ),
+                        ],
                       ),
                     ),
-                  )
-                ],
-              ),
+                  ),
+                )
+              ],
             );
           });
         },

@@ -1,6 +1,7 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:chryssibooru/API.dart';
 import 'package:chryssibooru/DerpisRepo.dart';
+import 'package:chryssibooru/Views/ImageViewer.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -117,8 +118,14 @@ class HomePageState extends State<HomePage> {
                             elevation: 5,
                           ),
                           onTapDown: (_) {
-                            debugPrint(_.toString());
-                            Navigator.pushNamed(context, '/view');
+//                            Navigator.pushNamed(context, '/view', arguments: index);
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                  builder: (context) => ImageViewer(
+                                    index: index,
+                                  )),
+                            );
                           },
                         );
                       },
