@@ -8,8 +8,12 @@ Future<List<Derpi>> fetchDerpi(String url) async {
 
   if (response.statusCode == 200) {
     Iterable i = json.decode(response.body)['search'];
-    List<Derpi> derpis = i.map((dynamic) => Derpi.fromJson(dynamic)).toList();
-    return derpis;
+    if (i.length > 0) {
+      List<Derpi> derpis = i.map((dynamic) => Derpi.fromJson(dynamic)).toList();
+      return derpis;
+    } else {
+      return null;
+    }
   } else {
     throw Exception('Failed to load posts');
   }

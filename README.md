@@ -5,7 +5,6 @@ Derpibooru client made with Flutter
 ## Todo
 
  * Webm support
- * Swiping gallery view
  * App settings (theme perhaps?)
  
 ## Wontdo
@@ -16,6 +15,9 @@ Derpibooru client made with Flutter
  * Anything that requires the user to log in, since Derpibooru API does not support it
 
 ## Changelog
+
+* **28.05.2019**
+  * Added Gallery view to view full images
   
 * **26.05.2019**
   * Grid of images now properly loads further pages
