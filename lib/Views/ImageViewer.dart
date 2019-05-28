@@ -18,6 +18,8 @@ class ImageViewerState extends State<ImageViewer> {
   int initialIndex = 0;
   int _id = 0;
 
+  int descMaxLines = 3;
+
   DerpisRepo repo;
 
   @override
@@ -54,14 +56,23 @@ class ImageViewerState extends State<ImageViewer> {
         child: PageView.builder(
           controller: _pageController,
           itemCount: repo.derpis.length,
-          itemBuilder: (BuildContext context, int id) {
+          physics: BouncingScrollPhysics(),
+          itemBuilder: (BuildContext context, int index) {
             return Center(
-                child: CachedNetworkImage(
-                  imageUrl: "https:" + repo.derpis[id].representations.large,
-                  placeholder: (context, url) => new Image(image: AssetImage('assets/logo-medium.png')),
-                  errorWidget: (context, url, error) => new Icon(Icons.error),
-                  fit: BoxFit.contain,
-                )
+                child: (){
+                  if(repo.derpis[index].mimeType != MimeType.VIDEO_WEBM){
+                    return new CachedNetworkImage(
+                      imageUrl:"https:" + repo.derpis[index].representations.medium,
+                      placeholder: (context, url) => new Image(image: AssetImage('assets/logo-medium.png')),
+                      errorWidget: (context, url, error) => new Icon(Icons.error),
+                      fit: BoxFit.contain,
+                    );
+                  } else {
+                    return new Center(
+                      child: Text('WEBM'),
+                    );
+                  }
+                }()
             );
           },
           onPageChanged: (pageId) {
@@ -71,12 +82,80 @@ class ImageViewerState extends State<ImageViewer> {
           },
         ),
       ),
-      bottomNavigationBar: BottomAppBar(
-        child: Row(
-          children: <Widget>[
-            Text((_id+1).toString() + '/' + repo.derpis.length.toString())
-          ],
+      bottomNavigationBar: GestureDetector(
+        child: BottomAppBar(
+          child: Padding(
+            padding: EdgeInsets.symmetric(horizontal: 5.0),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: <Widget>[
+                Text((_id+1).toString() + '/' + repo.derpis.length.toString()),
+                Icon(Icons.keyboard_arrow_up),
+                Text(repo.derpis[_id].score.toString())
+              ],
+            ),
+          ),
         ),
+        onVerticalDragUpdate: (details) {
+          showModalBottomSheet(context: context, builder: (BuildContext context){
+            Derpi derpi = repo.derpis[_id];
+            List<Tag> tags = derpi.tags;
+            return Padding(
+              padding: EdgeInsets.fromLTRB(10.0, 5.0, 10.0, 5.0),
+              child: Column(
+                children: <Widget>[
+                  Padding(
+                    padding: const EdgeInsets.all(8.0),
+                    child: Text('Uploader: ' + derpi.uploader),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.all(4.0),
+                    child: SingleChildScrollView(
+                      child: GestureDetector(
+                        onTap: (){},
+                        child: Text(
+                          derpi.description,
+                          maxLines: descMaxLines,
+                          overflow: TextOverflow.fade,
+                        ),
+                      ),
+                    ),
+                  ),
+                  Expanded(
+                    child: SingleChildScrollView(
+                      child: Wrap(
+                        spacing: 5.0,
+                        runSpacing: 5.0,
+                        children: List.generate(derpi.tags.length, (i){
+                            return new Chip(
+                              padding: EdgeInsets.all(0.0),
+                              label: Text(tags[i].label),
+                              backgroundColor: (){
+                                switch (tags[i].type){
+                                  case TagType.ARTIST:
+                                    return Color.fromARGB(255, 0, 0, 255);
+                                    break;
+                                  case TagType.OC:
+                                    return Color.fromARGB(255, 0, 255, 0);
+                                    break;
+                                  case TagType.SPOILER:
+                                    return Color.fromARGB(255, 255, 0, 0);
+                                    break;
+                                  default:
+                                    return Color.fromARGB(255, 150, 150, 150);
+                                    break;
+                                }
+                              }(),
+                            );
+                          }),
+                      ),
+                    ),
+                  )
+                ],
+              ),
+            );
+          });
+        },
       ),
     );
   }

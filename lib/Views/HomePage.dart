@@ -248,7 +248,8 @@ class HomePageState extends State<HomePage> {
     showModalBottomSheet<void>(
         context: _scaffoldKey.currentContext,
         builder: (BuildContext context) {
-          return Padding(padding: EdgeInsets.fromLTRB(10.0, 1.0, 10.0, MediaQuery.of(context).viewInsets.bottom),
+          return Padding(
+            padding: EdgeInsets.fromLTRB(10.0, 1.0, 10.0, MediaQuery.of(context).viewInsets.bottom),
             child: new TextField(
               decoration: InputDecoration(
                   border: InputBorder.none,

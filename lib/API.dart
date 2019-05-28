@@ -55,7 +55,7 @@ class Derpi {
   int upvotes;
   int downvotes;
   int faves;
-  String tags;
+  List<Tag> tags;
   List<int> tagIds;
   double aspectRatio;
   OriginalFormat originalFormat;
@@ -114,7 +114,7 @@ class Derpi {
     upvotes: json["upvotes"],
     downvotes: json["downvotes"],
     faves: json["faves"],
-    tags: json["tags"],
+    tags: Tag.parse(json["tags"]),
     tagIds: new List<int>.from(json["tag_ids"].map((x) => x)),
     aspectRatio: json["aspect_ratio"].toDouble(),
     originalFormat: originalFormatValues.map[json["original_format"]],
@@ -174,6 +174,14 @@ final originalFormatValues = new EnumValues({
   "webm": OriginalFormat.WEBM
 });
 
+enum TagType { ARTIST, SPOILER, OC }
+
+final tagTypeValues = new EnumValues({
+  "artist": TagType.ARTIST,
+  "spoiler": TagType.SPOILER,
+  "oc": TagType.OC
+});
+
 class Representations {
   String thumbTiny;
   String thumbSmall;
@@ -224,6 +232,29 @@ class Representations {
     "webm": webm == null ? null : webm,
     "mp4": mp4 == null ? null : mp4,
   };
+}
+
+class Tag {
+  TagType type;
+  String label;
+
+  Tag(String tag) {
+    var splitTag = tag.split(':');
+    if (splitTag.length >= 2) {
+      this.type = tagTypeValues.map[splitTag[0]];
+      this.label = tag;
+    } else {
+      this.label = tag;
+    }
+  }
+
+  static List<Tag> parse(String tags) {
+    List<Tag> outTags = new List<Tag>();
+    for (String t in tags.split(', ')) {
+      outTags.add(new Tag(t));
+    }
+    return outTags;
+  }
 }
 
 class EnumValues<T> {
