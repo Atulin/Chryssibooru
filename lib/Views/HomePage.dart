@@ -97,12 +97,20 @@ class HomePageState extends State<HomePage> {
                               padding: EdgeInsets.all(0.2),
                               child: ClipRRect(
                                 borderRadius:new BorderRadius.all(Radius.circular(10.0)),
-                                child: new CachedNetworkImage(
-                                  imageUrl:"https:" + repo.derpis[index].representations.thumb,
-                                  placeholder: (context, url) => new Image(image: AssetImage('assets/logo-medium.png')),
-                                  errorWidget: (context, url, error) => new Icon(Icons.error),
-                                  fit: BoxFit.cover,
-                                ),
+                                child: (){
+                                  if(repo.derpis[index].mimeType != MimeType.VIDEO_WEBM){
+                                    return new CachedNetworkImage(
+                                      imageUrl:"https:" + repo.derpis[index].representations.thumb,
+                                      placeholder: (context, url) => new Image(image: AssetImage('assets/logo-medium.png')),
+                                      errorWidget: (context, url, error) => new Icon(Icons.error),
+                                      fit: BoxFit.cover,
+                                    );
+                                  } else {
+                                    return new Center(
+                                      child: Text('WEBM'),
+                                    );
+                                  }
+                                }()
                               ),
                             ),
                             shape: RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(10.0))),
