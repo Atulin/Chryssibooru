@@ -18,6 +18,7 @@ Derpibooru client made with Flutter
 
 * **28.05.2019**
   * Added Gallery view to view full images
+  * Added tag list, description, score, the whole shebang
   
 * **26.05.2019**
   * Grid of images now properly loads further pages
