@@ -1,7 +1,6 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:chryssibooru/API.dart';
 import 'package:chryssibooru/DerpisRepo.dart';
-import 'package:chryssibooru/Views/ImageViewer.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -77,7 +76,7 @@ class HomePageState extends State<HomePage> {
           children: <Widget>[
             new Expanded(
                 child: (){
-                  if (repo.derpis == null) {
+                  if (repo.derpis == null || repo.derpis.length <= 0) {
                     return new Image(image: AssetImage('assets/logo-medium.png'));
                   } else {
                     return new GridView.builder(
@@ -111,8 +110,7 @@ class HomePageState extends State<HomePage> {
                           ),
                           onTapDown: (_) {
                             debugPrint(_.toString());
-                            Route route = MaterialPageRoute(builder: (BuildContext context) {});
-                            Navigator.push(context, route);
+                            Navigator.pushNamed(context, '/view');
                           },
                         );
                       },
@@ -146,7 +144,9 @@ class HomePageState extends State<HomePage> {
                       repo.derpis = new List<Derpi>();
                       repo.page = 1;
                       repo.setParams(text);
-                      repo.loadDerpis();
+                      setState(() {
+                        repo.loadDerpis();
+                      });
                     }
                   },
                 ),

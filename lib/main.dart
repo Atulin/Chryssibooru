@@ -1,7 +1,8 @@
 import 'package:chryssibooru/DerpisRepo.dart';
+import 'package:chryssibooru/Views/HomePage.dart';
+import 'package:chryssibooru/Views/ImageViewer.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:chryssibooru/Views/HomePage.dart';
 
 void main() => runApp(MyApp());
 
@@ -18,7 +19,11 @@ class MyApp extends StatelessWidget {
           primarySwatch: Colors.teal,
           fontFamily: 'Montserrat',
         ),
-        home: HomePage(title: 'Flutter Demo Home Page'),
+        initialRoute: '/',
+        routes: <String, WidgetBuilder>{
+          '/': (context) => HomePage(title: 'Flutter Demo Home Page'),
+          '/view': (context) => ImageViewer(title: 'Flutter Demo Home Page'),
+        },
       ),
     );
   }

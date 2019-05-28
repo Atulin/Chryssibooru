@@ -2,7 +2,6 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:chryssibooru/API.dart';
 import 'package:chryssibooru/DerpisRepo.dart';
 import 'package:flutter/material.dart';
-import 'package:path/path.dart';
 import 'package:provider/provider.dart';
 
 class ImageViewer extends StatefulWidget {
@@ -28,19 +27,37 @@ class ImageViewerState extends State<ImageViewer> {
     super.didChangeDependencies();
   }
 
-  PageController _controller = PageController(initialPage: 0, keepPage: false);
+  PageController _pageController;
+
+  @override
+  void initState() {
+    _pageController = PageController();
+    _pageController.addListener(_loadDerpisListener);
+    super.initState();
+  }
+
+  void _loadDerpisListener() {
+    if (repo.derpis.length - _pageController.page <= 3.0
+        && !_pageController.position.outOfRange
+        && repo.loaded) {
+      repo.page++;
+      setState(() {
+        repo.loadDerpis();
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       body: Center(
         child: PageView.builder(
-          controller: _controller,
-          itemCount: derpis.length,
+          controller: _pageController,
+          itemCount: repo.derpis.length,
           itemBuilder: (BuildContext context, int id) {
             return Center(
                 child: CachedNetworkImage(
-                  imageUrl: "https:" + derpis[id].representations.large,
+                  imageUrl: "https:" + repo.derpis[id].representations.large,
                   placeholder: (context, url) => new Image(image: AssetImage('assets/logo-medium.png')),
                   errorWidget: (context, url, error) => new Icon(Icons.error),
                   fit: BoxFit.contain,
@@ -57,7 +74,7 @@ class ImageViewerState extends State<ImageViewer> {
       bottomNavigationBar: BottomAppBar(
         child: Row(
           children: <Widget>[
-            Text((_id+1).toString() + '/' + derpis.length.toString())
+            Text((_id+1).toString() + '/' + repo.derpis.length.toString())
           ],
         ),
       ),
