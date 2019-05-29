@@ -72,3 +72,4 @@ build/
 
 /.gradle/
 *.afdesign
+/android/keystore.properties

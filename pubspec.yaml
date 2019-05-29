@@ -7,7 +7,7 @@ description: Derpibooru client made with Flutter
 # Both the version and the builder number may be overridden in flutter
 # build by specifying --build-name and --build-number, respectively.
 # Read more about versioning at semver.org.
-version: 1.0.0+2
+version: 1.1.0+1
 
 environment:
   sdk: ">=2.2.2 <3.0.0"
@@ -24,7 +24,7 @@ dependencies:
 
 #  cached_network_image: ^0.7.0
 
-  flutter_advanced_networkimage: any
+  flutter_advanced_networkimage: ^0.4.15
 
   shared_preferences: ^0.5.2
 
@@ -34,6 +34,10 @@ dependencies:
 
   share: any
 
+  flutter_svg: ^0.12.0
+
+  image_downloader: ^0.15.4
+
 #  webview_flutter: ^0.3.6
 
 
@@ -41,6 +45,15 @@ dev_dependencies:
   flutter_test:
     sdk: flutter
 
+  flutter_launcher_icons: ^0.7.2
+
+
+flutter_icons:
+  android: true
+  ios: true
+  image_path: "assets/logo-xlarge-sq.png"
+  adaptive_icon_background: "#000000"
+  adaptive_icon_foreground: "assets/logo-xlarge-sq.png"
 
 # For information on the generic Dart part of this file, see the
 # following page: https://www.dartlang.org/tools/pub/pubspec
@@ -59,6 +72,7 @@ flutter:
     - assets/logo-medium.png
     - assets/logo-large.png
     - assets/logo-xlarge.png
+    - assets/logo.svg
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.io/assets-and-images/#resolution-aware.

@@ -8,6 +8,8 @@ import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:share/share.dart';
 
+import '../Helpers.dart';
+
 class ImageViewer extends StatefulWidget {
   ImageViewer({Key key, this.title, @required this.index}) : super(key: key);
 
@@ -102,13 +104,25 @@ class ImageViewerState extends State<ImageViewer> {
         child: BottomAppBar(
           child: Padding(
             padding: EdgeInsets.symmetric(horizontal: 30.0, vertical: 8.0),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: <Widget>[
-                Text((_id+1).toString() + '/' + repo.derpis.length.toString()),
-                Icon(Icons.keyboard_arrow_up),
-                Text(repo.derpis[_id].score.toString())
-              ],
+            child: Container(
+              height: 30,
+              child: Stack(
+//              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: <Widget>[
+                  Align(
+                    alignment: Alignment.centerLeft,
+                    child: Text((_id+1).toString() + '/' + repo.derpis.length.toString())
+                  ),
+                  Align(
+                    alignment: Alignment.center,
+                    child: Icon(Icons.keyboard_arrow_up),
+                  ),
+                  Align(
+                      alignment: Alignment.centerRight,
+                    child: Text(repo.derpis[_id].score.toString())
+                  )
+                ],
+              ),
             ),
           ),
         ),
@@ -249,7 +263,7 @@ class ImageViewerState extends State<ImageViewer> {
                             child: InkWell(
                               borderRadius: BorderRadius.all(Radius.circular(50.0)),
                               child: Icon(Icons.file_download),
-                              onTap: () {},
+                              onTap: () => downloadImage(derpi.representations.full),
                               onLongPress: (){
                                 showModalBottomSheet(context: context, builder: (BuildContext context){
                                   return Padding(
@@ -287,6 +301,7 @@ class ImageViewerState extends State<ImageViewer> {
                       child: Wrap(
                         spacing: 5,
                         runSpacing: -5,
+                        alignment: WrapAlignment.center,
                         children: [
                           for (final tag in tags)
                             Chip(
@@ -310,13 +325,4 @@ class ImageViewerState extends State<ImageViewer> {
       ),
     );
   }
-
-  Future openInBrowser(String url) async {
-    if (await canLaunch(url)) {
-      await launch(url);
-    } else {
-      throw 'Could not launch $url';
-    }
-  }
-
 }
