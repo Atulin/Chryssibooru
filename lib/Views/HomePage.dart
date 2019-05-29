@@ -53,13 +53,18 @@ class HomePageState extends State<HomePage> {
   }
 
   void _saveKey(String key) async {
+    setState(() {
+      repo.key = key;
+    });
     SharedPreferences prefs = await SharedPreferences.getInstance();
     await prefs.setString("key", key);
   }
 
   void _getKey() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
-    repo.key = prefs.getString("key") ?? "";
+    setState(() {
+      repo.key = prefs.getString("key") ?? "";
+    });
   }
 
 
@@ -158,7 +163,7 @@ class HomePageState extends State<HomePage> {
                     if (text != repo.query) {
                       repo.derpis = new List<Derpi>();
                       repo.page = 1;
-                      repo.setParams(text);
+                      repo.query = text;
                       setState(() {
                         repo.loadDerpis();
                       });
