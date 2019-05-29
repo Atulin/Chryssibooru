@@ -58,11 +58,14 @@ android {
         release {
             signingConfig signingConfigs.debug
 
-            minifyEnabled true
+            minifyEnabled false
             useProguard true
 
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }
+//        dependencies {
+//            implementation 'com.android.support:support-fragment:28.0.0'
+//        }
     }
 }
 
