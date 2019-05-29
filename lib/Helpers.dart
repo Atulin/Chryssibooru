@@ -27,7 +27,7 @@ Future openInBrowser(String url) async {
 Future downloadImage(String url) async {
   try {
     // Saved with this method.
-    var imageId = await ImageDownloader.downloadImage(url);
+    var imageId = await ImageDownloader.downloadImage('https://'+url);
     if (imageId == null) {
       debugPrint("Image is null");
     }
