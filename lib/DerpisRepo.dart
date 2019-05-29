@@ -25,12 +25,4 @@ class DerpisRepo extends ChangeNotifier {
     }
     loaded = true;
   }
-
-  void setParams(String query, [String key = '', bool s = true, bool q = false, bool e = false]) {
-    this.safe = s;
-    this.questionable = q;
-    this.explicit = e;
-    this.query = query;
-    this.key = key;
-  }
 }

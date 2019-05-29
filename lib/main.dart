@@ -1,6 +1,5 @@
 import 'package:chryssibooru/DerpisRepo.dart';
 import 'package:chryssibooru/Views/HomePage.dart';
-import 'package:chryssibooru/Views/ImageViewer.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 

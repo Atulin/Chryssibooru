@@ -16,6 +16,14 @@ Derpibooru client made with Flutter
 
 ## Changelog
 
+* **29.05.2019**
+  * Replaced `CachedNetworkImage` with `AdvancedNetworkImage`
+  * Added image cache cleanup
+  * Added progress bar for image loading
+  * Share button works
+  * Copy button works
+  * Open in browser button works
+
 * **28.05.2019**
   * Added Gallery view to view full images
   * Added tag list, description, score, the whole shebang
