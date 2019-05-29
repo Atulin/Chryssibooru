@@ -1,8 +1,12 @@
-import 'package:cached_network_image/cached_network_image.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter_advanced_networkimage/provider.dart';
+import 'package:flutter_advanced_networkimage/transition.dart';
 import 'package:chryssibooru/API.dart';
 import 'package:chryssibooru/DerpisRepo.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:url_launcher/url_launcher.dart';
+import 'package:share/share.dart';
 
 class ImageViewer extends StatefulWidget {
   ImageViewer({Key key, this.title, @required this.index}) : super(key: key);
@@ -37,6 +41,7 @@ class ImageViewerState extends State<ImageViewer> {
 
   @override
   void initState() {
+    _id = initialIndex;
     _pageController = PageController(initialPage: initialIndex);
     _pageController.addListener(_loadDerpisListener);
     super.initState();
@@ -65,15 +70,22 @@ class ImageViewerState extends State<ImageViewer> {
             return Center(
                 child: (){
                   if(repo.derpis[index].mimeType != MimeType.VIDEO_WEBM){
-                    return new CachedNetworkImage(
-                      imageUrl:"https:" + repo.derpis[index].representations.medium,
-                      placeholder: (context, url) => new Image(image: AssetImage('assets/logo-medium.png')),
-                      errorWidget: (context, url, error) => new Icon(Icons.error),
+                    return new TransitionToImage(
+                        image: AdvancedNetworkImage(
+                          "https:" + repo.derpis[index].representations.medium,
+                          useDiskCache: true,
+                          cacheRule: CacheRule(maxAge: const Duration(days: 7))
+                        ),
+                      placeholder: Image(image: AssetImage('assets/logo-medium.png')),
+                      loadingWidgetBuilder: (double progress) => CircularProgressIndicator(
+                        value: progress,
+                        semanticsValue: progress.toString(),
+                      ),
                       fit: BoxFit.contain,
                     );
                   } else {
                     return new Center(
-                      child: Text(initialIndex.toString()),
+                      child: Text("Webm isn't supported yet 😢"),
                     );
                   }
                 }()
@@ -89,7 +101,7 @@ class ImageViewerState extends State<ImageViewer> {
       bottomNavigationBar: GestureDetector(
         child: BottomAppBar(
           child: Padding(
-            padding: EdgeInsets.symmetric(horizontal: 5.0, vertical: 5.0),
+            padding: EdgeInsets.symmetric(horizontal: 30.0, vertical: 8.0),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: <Widget>[
@@ -120,7 +132,29 @@ class ImageViewerState extends State<ImageViewer> {
                             child: InkWell(
                               borderRadius: BorderRadius.all(Radius.circular(50.0)),
                               child: Icon(Icons.share),
-                              onTap: () {},
+                              onTap: () {
+                                showModalBottomSheet(
+                                    context: context,
+                                    builder: (BuildContext context) {
+                                      return Container(
+                                        height: 100.0,
+                                        child: Column(
+                                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                                          children: <Widget>[
+                                            FlatButton(
+                                              onPressed: () => Share.share("https://derpibooru.org/"+derpi.id.toString()),
+                                              child: Text("Derpibooru post"),
+                                            ),
+                                            FlatButton(
+                                              onPressed: () => Share.share("https:"+derpi.representations.full),
+                                              child: Text("Direct image"),
+                                            )
+                                          ],
+                                        ),
+                                      );
+                                    }
+                                );
+                              },
                               onLongPress: (){
                                 showModalBottomSheet(context: context, builder: (BuildContext context){
                                   return Padding(
@@ -137,7 +171,29 @@ class ImageViewerState extends State<ImageViewer> {
                             child: InkWell(
                               borderRadius: BorderRadius.all(Radius.circular(50.0)),
                               child: Icon(Icons.link),
-                              onTap: () {},
+                              onTap: (){
+                                showModalBottomSheet(
+                                  context: context,
+                                  builder: (BuildContext context) {
+                                    return Container(
+                                      height: 100.0,
+                                      child: Column(
+                                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                                        children: <Widget>[
+                                          FlatButton(
+                                            onPressed: () => openInBrowser("https://derpibooru.org/"+derpi.id.toString()),
+                                            child: Text("Derpibooru post"),
+                                          ),
+                                          FlatButton(
+                                            onPressed: () => openInBrowser("https:"+derpi.representations.full),
+                                            child: Text("Direct image"),
+                                          )
+                                        ],
+                                      ),
+                                    );
+                                  }
+                                );
+                              },
                               onLongPress: (){
                                 showModalBottomSheet(context: context, builder: (BuildContext context){
                                   return Padding(
@@ -154,7 +210,29 @@ class ImageViewerState extends State<ImageViewer> {
                             child: InkWell(
                               borderRadius: BorderRadius.all(Radius.circular(50.0)),
                               child: Icon(Icons.content_copy),
-                              onTap: () {},
+                              onTap: () {
+                                showModalBottomSheet(
+                                    context: context,
+                                    builder: (BuildContext context) {
+                                      return Container(
+                                        height: 100.0,
+                                        child: Column(
+                                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                                          children: <Widget>[
+                                            FlatButton(
+                                              onPressed: () => Clipboard.setData(new ClipboardData(text: "https://derpibooru.org/"+derpi.id.toString())),
+                                              child: Text("Derpibooru post"),
+                                            ),
+                                            FlatButton(
+                                              onPressed: () => Clipboard.setData(new ClipboardData(text: "https:"+derpi.representations.full)),
+                                              child: Text("Direct image"),
+                                            )
+                                          ],
+                                        ),
+                                      );
+                                    }
+                                );
+                              },
                               onLongPress: (){
                                 showModalBottomSheet(context: context, builder: (BuildContext context){
                                   return Padding(
@@ -164,7 +242,24 @@ class ImageViewerState extends State<ImageViewer> {
                                 });
                               },
                             ),
-                          )
+                          ),
+                          Container(
+                            height: 30,
+                            width: 30,
+                            child: InkWell(
+                              borderRadius: BorderRadius.all(Radius.circular(50.0)),
+                              child: Icon(Icons.file_download),
+                              onTap: () {},
+                              onLongPress: (){
+                                showModalBottomSheet(context: context, builder: (BuildContext context){
+                                  return Padding(
+                                    padding: const EdgeInsets.all(8.0),
+                                    child: Text("Download"),
+                                  );
+                                });
+                              },
+                            ),
+                          ),
                         ],
                       )
                     ],
@@ -215,4 +310,13 @@ class ImageViewerState extends State<ImageViewer> {
       ),
     );
   }
+
+  Future openInBrowser(String url) async {
+    if (await canLaunch(url)) {
+      await launch(url);
+    } else {
+      throw 'Could not launch $url';
+    }
+  }
+
 }

@@ -1,10 +1,13 @@
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:chryssibooru/API.dart';
 import 'package:chryssibooru/DerpisRepo.dart';
 import 'package:chryssibooru/Views/ImageViewer.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_advanced_networkimage/provider.dart';
+import 'package:flutter_advanced_networkimage/transition.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+
+import '../Helpers.dart';
 
 
 
@@ -27,6 +30,19 @@ class HomePageState extends State<HomePage> {
 
   DerpisRepo repo;
 
+  int cacheSize = 0;
+  void getCacheSize() async {
+    var cs = await DiskCache().cacheSize();
+    setState(() {
+      cacheSize = cs;
+    });
+  }
+  void cleanCache() async {
+    await DiskCache().clear();
+    getCacheSize();
+  }
+
+
   @override
   didChangeDependencies() {
     repo = Provider.of<DerpisRepo>(context);
@@ -36,6 +52,7 @@ class HomePageState extends State<HomePage> {
 
   @override
   void initState() {
+    getCacheSize();
     _scrollController = ScrollController();
     _scrollController.addListener(_loadDerpisListener);
     super.initState();
@@ -105,10 +122,19 @@ class HomePageState extends State<HomePage> {
                                 borderRadius:new BorderRadius.all(Radius.circular(10.0)),
                                 child: (){
                                   if(repo.derpis[index].mimeType != MimeType.VIDEO_WEBM){
-                                    return new CachedNetworkImage(
-                                      imageUrl:"https:" + repo.derpis[index].representations.thumb,
-                                      placeholder: (context, url) => new Image(image: AssetImage('assets/logo-medium.png')),
-                                      errorWidget: (context, url, error) => new Icon(Icons.error),
+                                    return new TransitionToImage(
+                                      image: AdvancedNetworkImage(
+                                        "https:" + repo.derpis[index].representations.thumb,
+                                        useDiskCache: true,
+                                        cacheRule: CacheRule(maxAge: const Duration(days: 7))
+                                      ),
+                                      placeholder: Image(image: AssetImage('assets/logo-medium.png')),
+                                      loadingWidgetBuilder: (double progress) => Center(
+                                        child: CircularProgressIndicator(
+                                          value: progress,
+                                          semanticsValue: progress.toString(),
+                                        ),
+                                      ),
                                       fit: BoxFit.cover,
                                     );
                                   } else {
@@ -193,8 +219,14 @@ class HomePageState extends State<HomePage> {
             ),
             ListTile(
               title: Text("Enter API key"),
-              subtitle: Text("Get it on Derpibooru in account settings", style: TextStyle(fontSize: 10.0)),
+              subtitle: Text("Get it on Derpibooru in account settings", style: TextStyle(fontSize: 12.0)),
               onTap: showKeySheet,
+            ),
+            ListTile(
+              title: Text("Cache size: "+parseFileSize(cacheSize)),
+              subtitle: Text("Tap to recalculate, hold to clean", style: TextStyle(fontSize: 12.0)),
+              onTap: getCacheSize,
+              onLongPress: cleanCache,
             )
           ],
         ),
