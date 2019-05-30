@@ -25,4 +25,10 @@ class DerpisRepo extends ChangeNotifier {
     }
     loaded = true;
   }
+
+  void setRatings(bool safe, bool questionable, bool explicit) {
+    this.safe = safe;
+    this.questionable = questionable;
+    this.explicit = explicit;
+  }
 }
