@@ -16,6 +16,12 @@ Derpibooru client made with Flutter
 
 ## Changelog
 
+* **30.05.2019**
+  * Added search history
+  * Added application info
+  * Fixed filter sheet not updating
+  * Fixed image download
+
 * **29.05.2019**
   * Replaced `CachedNetworkImage` with `AdvancedNetworkImage`
   * Added image cache cleanup
