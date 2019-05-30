@@ -1,5 +1,6 @@
 import 'package:chryssibooru/API.dart';
 import 'package:chryssibooru/DerpisRepo.dart';
+import 'package:chryssibooru/Elements/FilterSheet.dart';
 import 'package:chryssibooru/Views/ImageViewer.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_advanced_networkimage/provider.dart';
@@ -31,6 +32,12 @@ class HomePageState extends State<HomePage> {
   double lastScrollPosition = 0.0;
 
   DerpisRepo repo;
+
+  List<String> searchHistory;
+
+  bool _s = true;
+  bool _q = false;
+  bool _e = false;
 
   int cacheSize = 0;
   void getCacheSize() async {
@@ -86,10 +93,43 @@ class HomePageState extends State<HomePage> {
     });
   }
 
+  void _saveSearch(String search) async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    List<String> history = prefs.getStringList("history") ?? new List<String>();
+
+    if (history != null && history.indexOf(search) < 0) {
+      if (history.length >= 50) history.removeAt(0);
+      history.add(search);
+    } else return;
+
+    prefs.setStringList("history", history);
+    _getSearchHistory();
+  }
+
+  void _getSearchHistory() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    setState(() {
+      searchHistory = prefs.getStringList("history");
+    });
+  }
+
+  void _removeSearchFromHistory(int index) async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    List<String> history = prefs.getStringList("history") ?? new List<String>();
+
+    if (history == null) return;
+
+    history.removeAt(index);
+    prefs.setStringList("history", history);
+
+    _getSearchHistory();
+  }
+
 
   @override
   Widget build(BuildContext context) {
     _getKey();
+//    _getSearchHistory();
 
     return Scaffold(
       key: _scaffoldKey,
@@ -185,14 +225,17 @@ class HomePageState extends State<HomePage> {
               ),
               Expanded(
                 child: TextField(
+
                   decoration: InputDecoration(
                       border: InputBorder.none,
                       hintText: 'Please enter a search term'),
                   onSubmitted: (text) {
-                    if (text != repo.query) {
+                    if (text != repo.query || _s != repo.safe || _q != repo.questionable || _e != repo.explicit) {
                       repo.derpis = new List<Derpi>();
                       repo.page = 1;
                       repo.query = text;
+                      repo.setRatings(_s, _q, _e);
+                      _saveSearch(text);
                       setState(() {
                         repo.loadDerpis();
                       });
@@ -203,7 +246,25 @@ class HomePageState extends State<HomePage> {
               IconButton(
                 icon: new Icon(Icons.filter_list),
                 onPressed: () {
-                  filterSheet();
+                  showModalBottomSheet<void>(
+                    context: context,
+                    builder: (BuildContext context) {
+                      return FilterSheet(
+                        safe: _s,
+                        safeChanged: (value) {
+                          _s = value;
+                        },
+                        questionable: _q,
+                        questionableChanged: (value) {
+                          _q = value;
+                        },
+                        explicit: _e,
+                        explicitChanged: (value) {
+                          _e = value;
+                        },
+                      );
+                    },
+                  );
                 },
               ),
             ],
@@ -215,7 +276,7 @@ class HomePageState extends State<HomePage> {
         child: ListView(
           children: <Widget>[
             DrawerHeader(
-            child: SvgPicture.asset('assets/logo.svg'),
+              child: SvgPicture.asset('assets/logo.svg'),
               decoration: BoxDecoration(
                 color: Colors.black
               ),
@@ -233,70 +294,36 @@ class HomePageState extends State<HomePage> {
               onTap: getCacheSize,
               onLongPress: cleanCache,
             ),
+            ListTile(
+              title: Text("History"),
+              subtitle: Text("See your previous searches", style: TextStyle(fontSize: 12.0)),
+              leading: Icon(Icons.history),
+              onTap: showHistoryModal,
+              onLongPress: (){debugPrint(searchHistory.toString());},
+            ),
             Divider(),
             ListTile(
               title: Text("Buy me a coffe"),
               subtitle: Text("Or two, I don't judge", style: TextStyle(fontSize: 12.0)),
               leading: Icon(Icons.free_breakfast),
               onTap: () => openInBrowser("https://ko-fi.com/angius"),
+            ),
+            AboutListTile(
+              applicationIcon: SvgPicture.asset('assets/logo.svg', height: 20, width: 20,),
+              icon: Icon(Icons.info_outline),
+              aboutBoxChildren: <Widget>[
+                ListTile(
+                  title: Text("Github"),
+                  leading: Icon(Icons.compare_arrows),
+                  onTap: () => openInBrowser("https://github.com/Atulin/Chryssibooru"),
+                  dense: true,
+                ),
+              ]
             )
           ],
         ),
       ),
     );
-  }
-
-  // BOTTOM SHEET
-  void filterSheet() {
-    showModalBottomSheet<void>(
-        context: context,
-        builder: (BuildContext context) {
-          return new Column(
-            mainAxisSize: MainAxisSize.min,
-            children: <Widget>[
-              new CheckboxListTile(
-                title: new Text('Safe'),
-                value: repo.safe,
-                onChanged: (bool newValue) {
-                  setState(() {
-                    repo.safe = newValue;
-                  });
-                },
-                dense: true,
-              ),
-              new CheckboxListTile(
-                title: new Text('Questionable'),
-                value: repo.questionable,
-                onChanged: (bool newValue) {
-                  setState(() {
-                    repo.questionable = newValue;
-                  });
-                },
-                dense: true,
-              ),
-              new CheckboxListTile(
-                title: new Text('Explicit'),
-                value: repo.explicit,
-                onChanged: (bool newValue) {
-                  setState(() {
-                    repo.explicit = newValue;
-                  });
-                },
-                dense: true,
-              ),
-              new ListTile(
-                leading: new Icon(Icons.photo_album),
-                title: new Text('Photos'),
-                onTap: () => () {},
-              ),
-              new ListTile(
-                leading: new Icon(Icons.videocam),
-                title: new Text('Video'),
-                onTap: () => () {},
-              ),
-            ],
-          );
-        });
   }
 
   void showKeySheet() async {
@@ -318,6 +345,51 @@ class HomePageState extends State<HomePage> {
             ),
           );
         }
+    );
+  }
+
+  void showHistoryModal() {
+    _getSearchHistory();
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        // return object of type Dialog
+        return AlertDialog(
+          title: new Text("History"),
+          content: new ListView.builder(
+            itemCount: searchHistory.length,
+              itemBuilder: (BuildContext context, int index) {
+                return new InkWell(
+                  child: Padding(
+                    padding: const EdgeInsets.all(8.0),
+                    child: Text(searchHistory[index]),
+                  ),
+                  onTap: (){
+                    if (searchHistory[index] != repo.query) {
+                      repo.derpis = new List<Derpi>();
+                      repo.page = 1;
+                      repo.query = searchHistory[index];
+                      repo.setRatings(_s, _q, _e);
+                      setState(() {
+                        repo.loadDerpis();
+                      });
+                    }
+                  },
+                  onLongPress: (){_removeSearchFromHistory(index);},
+                );
+              }
+          ),
+          actions: <Widget>[
+            // usually buttons at the bottom of the dialog
+            new FlatButton(
+              child: new Text("Close"),
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+            ),
+          ],
+        );
+      },
     );
   }
 }

@@ -12,10 +12,9 @@ Future<List<Derpi>> searchImages(String query, bool s, bool q, bool e, String ke
   if (e) ratingsArr.add("explicit");
   var ratings = ratingsArr.join(" OR ");
 
-
   var queryString = api_url + "q=" + query;
 
-  if (!((s&&q&&e)||!(s&&q&&e))) queryString += "%2C (" + ratings + ")";
+  if ( !( (s&&q&&e) || (!s&&!q&&!e) ) ) queryString += "%2C (" + ratings + ")";
                                 queryString += "&page="    + page.toString();
   if (key != "" || key != null) queryString += "&key="     + key;
   if (key == "" || key == null) queryString += "&perpage=" + limit.toString();

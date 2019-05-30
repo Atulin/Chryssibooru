@@ -1,4 +1,4 @@
-package angius.com.chryssibooru;
+package com.angius.chryssibooru;
 
 import android.os.Bundle;
 import io.flutter.app.FlutterActivity;

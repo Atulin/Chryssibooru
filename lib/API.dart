@@ -250,8 +250,12 @@ class Tag {
 
   static List<Tag> parse(String tags) {
     List<Tag> outTags = new List<Tag>();
-    for (String t in tags.split(', ')) {
-      outTags.add(new Tag(t));
+    if (tags != null){
+      for (String t in tags.split(', ')) {
+        outTags.add(new Tag(t));
+      }
+    } else {
+      outTags.add(new Tag('No tags ¯\\_(ツ)_/¯'));
     }
     return outTags;
   }
