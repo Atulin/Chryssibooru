@@ -60,7 +60,7 @@ class ImageViewerState extends State<ImageViewer> {
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext mainContext) {
     return Scaffold(
       body: Center(
         child: PageView.builder(
@@ -126,7 +126,7 @@ class ImageViewerState extends State<ImageViewer> {
           ),
         ),
         onVerticalDragUpdate: (details) {
-          showModalBottomSheet(context: context, builder: (context){
+          showModalBottomSheet(context: mainContext, builder: (context){
             Derpi derpi = repo.derpis[_id];
             List<Tag> tags = derpi.tags;
             return Column(
@@ -303,15 +303,68 @@ class ImageViewerState extends State<ImageViewer> {
                         alignment: WrapAlignment.center,
                         children: [
                           for (final tag in tags)
-                            Chip(
-                              padding: EdgeInsets.all(0),
-                              label: Text(tag.label),
-                              backgroundColor: {
-                                TagType.ARTIST: Colors.blue,
-                                TagType.OC: Colors.green,
-                                TagType.SPOILER: Colors.red,
-                              }[tag.type] ?? Colors.grey,
-                            ),
+                            GestureDetector(
+                              child: Chip(
+                                padding: EdgeInsets.all(0),
+                                label: Text(tag.label),
+                                backgroundColor: {
+                                  TagType.ARTIST: Colors.blue,
+                                  TagType.OC: Colors.green,
+                                  TagType.SPOILER: Colors.red,
+                                }[tag.type] ?? Colors.grey,
+                              ),
+                              onTap: (){
+                                showModalBottomSheet(
+                                    context: context,
+                                    builder: (BuildContext c) {
+                                      return Container(
+                                        height: 150.0,
+                                        child: Column(
+                                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                                          children: <Widget>[
+                                            FlatButton(
+                                              onPressed: () async {
+                                                repo.derpis = new List<Derpi>();
+                                                repo.addTag(tag.label);
+                                                await repo.loadDerpis();
+                                                setState(() {
+                                                  _id = 0;
+                                                  _pageController.jumpToPage(0);
+                                                });
+                                              },
+                                              child: Text("Add to search"),
+                                            ),
+                                            FlatButton(
+                                              onPressed: () async {
+                                                repo.derpis = new List<Derpi>();
+                                                repo.removeTag(tag.label);
+                                                await repo.loadDerpis();
+                                                setState(() {
+                                                  _id = 0;
+                                                  _pageController.jumpToPage(0);
+                                                });
+                                              },
+                                              child: Text("Remove from search"),
+                                            ),
+                                            FlatButton(
+                                              onPressed: () async {
+                                                repo.derpis = new List<Derpi>();
+                                                repo.query = tag.label;
+                                                await repo.loadDerpis();
+                                                setState(() {
+                                                  _id = 0;
+                                                  _pageController.jumpToPage(0);
+                                                });
+                                              },
+                                              child: Text("New search"),
+                                            )
+                                          ],
+                                        ),
+                                      );
+                                    }
+                                );
+                              },
+                            )
                         ],
                       ),
                     ),

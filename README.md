@@ -2,6 +2,11 @@
 
 Derpibooru client made with Flutter
 
+![Downloads](https://img.shields.io/github/downloads/Atulin/Chryssibooru/latest/total.svg) 
+![License](https://img.shields.io/github/license/Atulin/Chryssibooru.svg) 
+![Latest release](https://img.shields.io/github/release/Atulin/Chryssibooru.svg) 
+
+
 ## Todo
 
  * Webm support
@@ -15,6 +20,10 @@ Derpibooru client made with Flutter
  * Anything that requires the user to log in, since Derpibooru API does not support it
 
 ## Changelog
+
+* **31.05.2019**
+  * Search history now refreshes properly
+  * Tapping a tag now lets you add it to your current search, remove it, or search it solo
 
 * **30.05.2019**
   * Added search history
