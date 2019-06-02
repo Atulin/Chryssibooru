@@ -2,27 +2,45 @@
 
 Derpibooru client made with Flutter
 
-![Downloads](https://img.shields.io/github/downloads/Atulin/Chryssibooru/latest/total.svg) 
-![License](https://img.shields.io/github/license/Atulin/Chryssibooru.svg) 
-![Latest release](https://img.shields.io/github/release/Atulin/Chryssibooru.svg) 
+![Logo](assets/logo-large.png)
 
+![Downloads](https://img.shields.io/github/downloads/Atulin/Chryssibooru/latest/total.svg)
+![License](https://img.shields.io/github/license/Atulin/Chryssibooru.svg)
+![Latest release](https://img.shields.io/github/release/Atulin/Chryssibooru.svg)
 
 ## Todo
 
- * ~~Webm support~~ (kinda done..?)
- * App settings (theme perhaps?)
- 
+* Themes?
+
 ## Wontdo
 
- * Likes
- * Favourites
- * Comments
- * Anything that requires the user to log in, since Derpibooru API does not support it
+* Likes
+* Favourites
+* Comments
+* Anything that requires the user to log in, since Derpibooru API does not support it
 
 ## Known bugs
 
-  * An error screen will sometimes flash briefly when swiping between video files.
-  It soon disappears, though, and the video loads fine.
+* An error screen will sometimes flash briefly when swiping between video files.
+  It soon disappears, though, and the video loads fine. Happens only on slower devices or when loading large files.
+
+## Screenshots
+
+### Main grid view
+
+![Main grid view](screenshots/gridview.jpg)
+
+### Full image view
+
+![Full image view](screenshots/fullview.jpg)
+
+### Image details
+
+![Image details](screenshots/details.jpg)
+
+### App drawer
+
+![App drawer](screenshots/drawer.jpg)
 
 ## Changelog
 
