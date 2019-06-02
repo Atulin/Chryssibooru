@@ -9,7 +9,7 @@ Derpibooru client made with Flutter
 
 ## Todo
 
- * Webm support
+ * ~~Webm support~~ (kinda done..?)
  * App settings (theme perhaps?)
  
 ## Wontdo
@@ -19,7 +19,16 @@ Derpibooru client made with Flutter
  * Comments
  * Anything that requires the user to log in, since Derpibooru API does not support it
 
+## Known bugs
+
+  * An error screen will sometimes flash briefly when swiping between video files.
+  It soon disappears, though, and the video loads fine.
+
 ## Changelog
+
+* **02.06.2019**
+  * Webm files now show their gif thumbnail previews in grid view!
+  * Webm files in the big view *kinda* work now!
 
 * **31.05.2019**
   * Search history now refreshes properly
