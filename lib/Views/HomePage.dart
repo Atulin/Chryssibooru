@@ -142,30 +142,27 @@ class HomePageState extends State<HomePage> {
                               child: ClipRRect(
                                 borderRadius:new BorderRadius.all(Radius.circular(10.0)),
                                 child: (){
-                                  if(repo.derpis[index].mimeType != MimeType.VIDEO_WEBM){
-                                    return new TransitionToImage(
-                                      image: AdvancedNetworkImage(
-                                        "https:" + repo.derpis[index].representations.thumb,
+                                  String url = "https:" + repo.derpis[index].representations.thumb;
+                                  if(repo.derpis[index].mimeType == MimeType.VIDEO_WEBM){
+                                    List<String> parts = url.split('.');
+                                    parts[parts.length-1] = 'gif';
+                                    url = parts.join('.');
+                                  }
+                                  return new TransitionToImage(
+                                    image: AdvancedNetworkImage(
+                                        url,
                                         useDiskCache: true,
                                         cacheRule: CacheRule(maxAge: const Duration(days: 7))
+                                    ),
+                                    placeholder: SvgPicture.asset('assets/logo.svg'),
+                                    loadingWidgetBuilder: (double progress) => Center(
+                                      child: CircularProgressIndicator(
+                                        value: progress,
+                                        semanticsValue: progress.toString(),
                                       ),
-                                      placeholder: SvgPicture.asset('assets/logo.svg'),
-                                      loadingWidgetBuilder: (double progress) => Center(
-                                        child: CircularProgressIndicator(
-                                          value: progress,
-                                          semanticsValue: progress.toString(),
-                                        ),
-                                      ),
-                                      fit: BoxFit.cover,
-                                    );
-                                  } else {
-                                    return new Center(
-                                      child: Padding(
-                                        padding: const EdgeInsets.all(40.0),
-                                        child: Text("Webm isn't supported yet 😢", textAlign: TextAlign.center,),
-                                      ),
-                                    );
-                                  }
+                                    ),
+                                    fit: BoxFit.cover,
+                                  );
                                 }()
                               ),
                             ),
