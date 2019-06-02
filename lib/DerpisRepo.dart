@@ -16,7 +16,7 @@ class DerpisRepo extends ChangeNotifier {
 
   int page = 1;
 
-  void loadDerpis() async {
+  Future loadDerpis() async {
     loaded = false;
     final newImages = await searchImages(query, safe, questionable, explicit, key, page);
     if (newImages != null) {
@@ -30,5 +30,18 @@ class DerpisRepo extends ChangeNotifier {
     this.safe = safe;
     this.questionable = questionable;
     this.explicit = explicit;
+  }
+
+  void addTag(String tag) {
+    List<String> tagArr = this.query.split(', ');
+    tagArr.add(tag);
+    this.query = tagArr.join(', ');
+  }
+
+  void removeTag(String tag) {
+    List<String> tagArr = this.query.split(', ');
+    tagArr.remove(tag);
+    tagArr.add('-'+tag);
+    this.query = tagArr.join(', ');
   }
 }

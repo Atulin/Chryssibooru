@@ -1,6 +1,7 @@
 import 'package:chryssibooru/API.dart';
 import 'package:chryssibooru/DerpisRepo.dart';
 import 'package:chryssibooru/Elements/FilterSheet.dart';
+import 'package:chryssibooru/Elements/HistoryModal.dart';
 import 'package:chryssibooru/Views/ImageViewer.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_advanced_networkimage/provider.dart';
@@ -103,33 +104,12 @@ class HomePageState extends State<HomePage> {
     } else return;
 
     prefs.setStringList("history", history);
-    _getSearchHistory();
-  }
-
-  void _getSearchHistory() async {
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-    setState(() {
-      searchHistory = prefs.getStringList("history");
-    });
-  }
-
-  void _removeSearchFromHistory(int index) async {
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-    List<String> history = prefs.getStringList("history") ?? new List<String>();
-
-    if (history == null) return;
-
-    history.removeAt(index);
-    prefs.setStringList("history", history);
-
-    _getSearchHistory();
   }
 
 
   @override
   Widget build(BuildContext context) {
     _getKey();
-//    _getSearchHistory();
 
     return Scaffold(
       key: _scaffoldKey,
@@ -154,7 +134,7 @@ class HomePageState extends State<HomePage> {
                           childAspectRatio: 1.0,
                           crossAxisSpacing: 4.0,
                           mainAxisSpacing: 4.0),
-                      itemBuilder: (BuildContext context, int index) {
+                      itemBuilder: (BuildContext c, int index) {
                         return new GestureDetector(
                           child: new Card(
                             child: Padding(
@@ -162,30 +142,27 @@ class HomePageState extends State<HomePage> {
                               child: ClipRRect(
                                 borderRadius:new BorderRadius.all(Radius.circular(10.0)),
                                 child: (){
-                                  if(repo.derpis[index].mimeType != MimeType.VIDEO_WEBM){
-                                    return new TransitionToImage(
-                                      image: AdvancedNetworkImage(
-                                        "https:" + repo.derpis[index].representations.thumb,
+                                  String url = "https:" + repo.derpis[index].representations.thumb;
+                                  if(repo.derpis[index].mimeType == MimeType.VIDEO_WEBM){
+                                    List<String> parts = url.split('.');
+                                    parts[parts.length-1] = 'gif';
+                                    url = parts.join('.');
+                                  }
+                                  return new TransitionToImage(
+                                    image: AdvancedNetworkImage(
+                                        url,
                                         useDiskCache: true,
                                         cacheRule: CacheRule(maxAge: const Duration(days: 7))
+                                    ),
+                                    placeholder: SvgPicture.asset('assets/logo.svg'),
+                                    loadingWidgetBuilder: (double progress) => Center(
+                                      child: CircularProgressIndicator(
+                                        value: progress,
+                                        semanticsValue: progress.toString(),
                                       ),
-                                      placeholder: SvgPicture.asset('assets/logo.svg'),
-                                      loadingWidgetBuilder: (double progress) => Center(
-                                        child: CircularProgressIndicator(
-                                          value: progress,
-                                          semanticsValue: progress.toString(),
-                                        ),
-                                      ),
-                                      fit: BoxFit.cover,
-                                    );
-                                  } else {
-                                    return new Center(
-                                      child: Padding(
-                                        padding: const EdgeInsets.all(40.0),
-                                        child: Text("Webm isn't supported yet 😢", textAlign: TextAlign.center,),
-                                      ),
-                                    );
-                                  }
+                                    ),
+                                    fit: BoxFit.cover,
+                                  );
                                 }()
                               ),
                             ),
@@ -298,8 +275,14 @@ class HomePageState extends State<HomePage> {
               title: Text("History"),
               subtitle: Text("See your previous searches", style: TextStyle(fontSize: 12.0)),
               leading: Icon(Icons.history),
-              onTap: showHistoryModal,
-              onLongPress: (){debugPrint(searchHistory.toString());},
+              onTap:  () => showDialog(
+                context: context,
+                builder: (BuildContext context) {
+                  return new HistoryModal(
+                    repo: repo,
+                  );
+                }
+              ),
             ),
             Divider(),
             ListTile(
@@ -345,51 +328,6 @@ class HomePageState extends State<HomePage> {
             ),
           );
         }
-    );
-  }
-
-  void showHistoryModal() {
-    _getSearchHistory();
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        // return object of type Dialog
-        return AlertDialog(
-          title: new Text("History"),
-          content: new ListView.builder(
-            itemCount: searchHistory.length,
-              itemBuilder: (BuildContext context, int index) {
-                return new InkWell(
-                  child: Padding(
-                    padding: const EdgeInsets.all(8.0),
-                    child: Text(searchHistory[index]),
-                  ),
-                  onTap: (){
-                    if (searchHistory[index] != repo.query) {
-                      repo.derpis = new List<Derpi>();
-                      repo.page = 1;
-                      repo.query = searchHistory[index];
-                      repo.setRatings(_s, _q, _e);
-                      setState(() {
-                        repo.loadDerpis();
-                      });
-                    }
-                  },
-                  onLongPress: (){_removeSearchFromHistory(index);},
-                );
-              }
-          ),
-          actions: <Widget>[
-            // usually buttons at the bottom of the dialog
-            new FlatButton(
-              child: new Text("Close"),
-              onPressed: () {
-                Navigator.of(context).pop();
-              },
-            ),
-          ],
-        );
-      },
     );
   }
 }

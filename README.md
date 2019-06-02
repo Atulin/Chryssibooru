@@ -2,9 +2,14 @@
 
 Derpibooru client made with Flutter
 
+![Downloads](https://img.shields.io/github/downloads/Atulin/Chryssibooru/latest/total.svg) 
+![License](https://img.shields.io/github/license/Atulin/Chryssibooru.svg) 
+![Latest release](https://img.shields.io/github/release/Atulin/Chryssibooru.svg) 
+
+
 ## Todo
 
- * Webm support
+ * ~~Webm support~~ (kinda done..?)
  * App settings (theme perhaps?)
  
 ## Wontdo
@@ -14,7 +19,20 @@ Derpibooru client made with Flutter
  * Comments
  * Anything that requires the user to log in, since Derpibooru API does not support it
 
+## Known bugs
+
+  * An error screen will sometimes flash briefly when swiping between video files.
+  It soon disappears, though, and the video loads fine.
+
 ## Changelog
+
+* **02.06.2019**
+  * Webm files now show their gif thumbnail previews in grid view!
+  * Webm files in the big view *kinda* work now!
+
+* **31.05.2019**
+  * Search history now refreshes properly
+  * Tapping a tag now lets you add it to your current search, remove it, or search it solo
 
 * **30.05.2019**
   * Added search history

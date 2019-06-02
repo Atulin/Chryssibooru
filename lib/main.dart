@@ -18,12 +18,7 @@ class MyApp extends StatelessWidget {
           primarySwatch: Colors.teal,
           fontFamily: 'Montserrat',
         ),
-home: HomePage(),
-//        initialRoute: '/',
-//        routes: <String, WidgetBuilder>{
-//          '/': (context) => HomePage(title: 'Flutter Demo Home Page'),
-//          '/view': (context) => ImageViewer(title: 'Flutter Demo Home Page'),
-//        },
+        home: HomePage(),
       ),
     );
   }
