@@ -21,6 +21,8 @@ class ImageViewer extends StatefulWidget {
 }
 
 class ImageViewerState extends State<ImageViewer> {
+  PageController _pageController;
+
   final int initialIndex;
   int _currentPage;
 
@@ -38,9 +40,16 @@ class ImageViewerState extends State<ImageViewer> {
   DerpisRepo repo;
 
   @override
+  void dispose() {
+    _videoController.dispose();
+    super.dispose();
+  }
+
+  @override
   didChangeDependencies() {
     repo = Provider.of<DerpisRepo>(context);
 
+    _videoController?.dispose();
     _videoController = VideoPlayerController.network('https:'+repo.derpis[_id].representations.medium)
       ..initialize().then((_) {
         _videoController.setVolume(_volume);
@@ -51,8 +60,6 @@ class ImageViewerState extends State<ImageViewer> {
 
     super.didChangeDependencies();
   }
-
-  PageController _pageController;
 
   @override
   void initState() {
