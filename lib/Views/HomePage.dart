@@ -1,5 +1,6 @@
 import 'package:chryssibooru/API.dart';
 import 'package:chryssibooru/DerpisRepo.dart';
+import 'package:chryssibooru/Elements/FavouritesModal.dart';
 import 'package:chryssibooru/Elements/FilterSheet.dart';
 import 'package:chryssibooru/Elements/HistoryModal.dart';
 import 'package:chryssibooru/Views/ImageViewer.dart';
@@ -282,6 +283,19 @@ class HomePageState extends State<HomePage> {
                     repo: repo,
                   );
                 }
+              ),
+            ),
+            ListTile(
+              title: Text("Favourites"),
+              subtitle: Text("See your favourite searches", style: TextStyle(fontSize: 12.0)),
+              leading: Icon(Icons.favorite),
+              onTap:  () => showDialog(
+                  context: context,
+                  builder: (BuildContext context) {
+                    return new FavouritesModal(
+                      repo: repo,
+                    );
+                  }
               ),
             ),
             Divider(),

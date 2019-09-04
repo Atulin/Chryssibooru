@@ -44,6 +44,10 @@ Derpibooru client made with Flutter
 
 ## Changelog
 
+* **04.09.2019**
+  * Added favourites list
+  * Made history and favourites dismissable
+
 * **02.06.2019**
   * Webm files now show their gif thumbnail previews in grid view!
   * Webm files in the big view *kinda* work now!

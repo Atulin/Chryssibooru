@@ -145,6 +145,7 @@ class ImageViewerState extends State<ImageViewer> {
                         onLongPress: () {
                           setState(() {
                             _autoplay = !_autoplay;
+                            debugPrint(_autoplay.toString());
                           });
                         },
                       ),
@@ -163,7 +164,7 @@ class ImageViewerState extends State<ImageViewer> {
                     Align(
                       alignment: Alignment.bottomRight,
                       child: IconButton(
-                          icon: Icon(_videoController.value.volume > 0 ? Icons.volume_off : Icons.volume_up),
+                          icon: Icon(_videoController.value.volume > 0 ? Icons.volume_up : Icons.volume_off),
                           onPressed: () => setState(() {
                             _videoController.value.volume > 0
                                 ? _volume = 0.0
