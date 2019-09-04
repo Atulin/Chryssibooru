@@ -7,6 +7,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:share/share.dart';
 import 'package:video_player/video_player.dart';
+import 'package:percent_indicator/linear_percent_indicator.dart';
 
 import '../Helpers.dart';
 
@@ -39,6 +40,8 @@ class ImageViewerState extends State<ImageViewer> {
 
   DerpisRepo repo;
 
+  double _videoProgressPercent = 0.0;
+
   @override
   void dispose() {
     _videoController.dispose();
@@ -51,12 +54,17 @@ class ImageViewerState extends State<ImageViewer> {
 
     _videoController?.dispose();
     _videoController = VideoPlayerController.network('https:'+repo.derpis[_id].representations.medium)
-      ..initialize().then((_) {
-        _videoController.setVolume(_volume);
-        _videoController.setLooping(true);
-        if (_autoplay) _videoController.play();
-        setState(() {});
+    ..addListener(() {
+      setState(() {
+        _videoProgressPercent = (_videoController.value.position.inMilliseconds / _videoController.value.duration.inMilliseconds).clamp(0.0, 1.0);
       });
+    })
+    ..initialize().then((_) {
+      _videoController.setVolume(_volume);
+      _videoController.setLooping(true);
+      if (_autoplay) _videoController.play();
+      setState(() {});
+    });
 
     super.didChangeDependencies();
   }
@@ -77,14 +85,19 @@ class ImageViewerState extends State<ImageViewer> {
     // Swap the video
     if (_pageController.page.round() != _currentPage) {
       if (repo.derpis[_pageController.page.round()].mimeType == MimeType.VIDEO_WEBM) {
-        _videoController.dispose();
+        _videoController?.dispose();
         _videoController = VideoPlayerController.network('https:'+repo.derpis[_pageController.page.round()].representations.medium)
-          ..initialize().then((_) {
-            _videoController.setVolume(_volume);
-            _videoController.setLooping(true);
-            if (_autoplay) _videoController.play();
-            setState(() {});
+        ..addListener(() {
+          setState(() {
+            _videoProgressPercent = (_videoController.value.position.inMilliseconds / _videoController.value.duration.inMilliseconds).clamp(0.0, 1.0);
           });
+        })
+        ..initialize().then((_) {
+          _videoController.setVolume(_volume);
+          _videoController.setLooping(true);
+          if (_autoplay) _videoController.play();
+          setState(() {});
+        });
       }
       _currentPage = _pageController.page.round();
     }
@@ -140,11 +153,7 @@ class ImageViewerState extends State<ImageViewer> {
                             _videoController.value.isPlaying
                                 ? _videoController.pause()
                                 : _videoController.play();
-                          });
-                        },
-                        onLongPress: () {
-                          setState(() {
-                            _autoplay = !_autoplay;
+                            _autoplay = _autoplay ? false : true;
                           });
                         },
                       ),
@@ -157,19 +166,33 @@ class ImageViewerState extends State<ImageViewer> {
                             _videoController.value.isPlaying
                                 ? _videoController.pause()
                                 : _videoController.play();
+                            _autoplay = _autoplay ? false : true;
                           })
                       ),
                     ),
                     Align(
                       alignment: Alignment.bottomRight,
                       child: IconButton(
-                          icon: Icon(_videoController.value.volume > 0 ? Icons.volume_off : Icons.volume_up),
+                          icon: Icon(_videoController.value.volume > 0 ? Icons.volume_up : Icons.volume_off),
                           onPressed: () => setState(() {
                             _videoController.value.volume > 0
                                 ? _volume = 0.0
                                 : _volume = 50.0;
                             _videoController.setVolume(_volume);
                           })
+                      ),
+                    ),
+                    Align(
+                      alignment: Alignment.bottomCenter,
+                      child: Container(
+                        height: 3,
+                        child: new LinearPercentIndicator(
+                          padding: EdgeInsets.all(0.0),
+                          linearStrokeCap: LinearStrokeCap.butt,
+                          lineHeight: 3.0,
+                          progressColor: Colors.teal,
+                          percent: _videoProgressPercent,
+                        )
                       ),
                     )
                   ],
@@ -180,6 +203,7 @@ class ImageViewerState extends State<ImageViewer> {
           onPageChanged: (pageId) {
             setState(() {
               _id = pageId.round();
+              _videoProgressPercent = 0.0;
             });
           },
         ),

@@ -1,5 +1,6 @@
 import 'package:chryssibooru/API.dart';
 import 'package:chryssibooru/DerpisRepo.dart';
+import 'package:chryssibooru/Elements/FavouritesModal.dart';
 import 'package:chryssibooru/Elements/FilterSheet.dart';
 import 'package:chryssibooru/Elements/HistoryModal.dart';
 import 'package:chryssibooru/Views/ImageViewer.dart';
@@ -63,6 +64,7 @@ class HomePageState extends State<HomePage> {
   @override
   void initState() {
     getCacheSize();
+    _getRatingPrefs();
     _scrollController = ScrollController();
     _scrollController.addListener(_loadDerpisListener);
     super.initState();
@@ -77,6 +79,22 @@ class HomePageState extends State<HomePage> {
         repo.loadDerpis();
       });
     }
+  }
+
+  void _getRatingPrefs() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    setState(() {
+      _s = prefs.getBool('safe');
+      _q = prefs.getBool('questionable');
+      _e = prefs.getBool('explicit');
+    });
+  }
+
+  void _saveRatingPrefs() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    prefs.setBool('safe', _s);
+    prefs.setBool('questionable', _q);
+    prefs.setBool('explicit', _e);
   }
 
   void _saveKey(String key) async {
@@ -230,14 +248,17 @@ class HomePageState extends State<HomePage> {
                         safe: _s,
                         safeChanged: (value) {
                           _s = value;
+                          _saveRatingPrefs();
                         },
                         questionable: _q,
                         questionableChanged: (value) {
                           _q = value;
+                          _saveRatingPrefs();
                         },
                         explicit: _e,
                         explicitChanged: (value) {
                           _e = value;
+                          _saveRatingPrefs();
                         },
                       );
                     },
@@ -255,7 +276,7 @@ class HomePageState extends State<HomePage> {
             DrawerHeader(
               child: SvgPicture.asset('assets/logo.svg'),
               decoration: BoxDecoration(
-                color: Colors.black
+                color: Color.fromARGB(1, 100, 150, 150)
               ),
             ),
             ListTile(
@@ -282,6 +303,19 @@ class HomePageState extends State<HomePage> {
                     repo: repo,
                   );
                 }
+              ),
+            ),
+            ListTile(
+              title: Text("Favourites"),
+              subtitle: Text("See your favourite searches", style: TextStyle(fontSize: 12.0)),
+              leading: Icon(Icons.favorite),
+              onTap:  () => showDialog(
+                  context: context,
+                  builder: (BuildContext context) {
+                    return new FavouritesModal(
+                      repo: repo,
+                    );
+                  }
               ),
             ),
             Divider(),
