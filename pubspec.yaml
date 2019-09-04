@@ -42,6 +42,8 @@ dependencies:
 
   flutter_slidable: ^0.5.3
 
+  percent_indicator: ^2.1.1
+
 #  webview_flutter: ^0.3.6
 
 

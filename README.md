@@ -26,27 +26,35 @@ Derpibooru client made with Flutter
 
 ## Screenshots
 
-### Main grid view
+| Main grid view | Full image view | Image details | App drawer |
+| -------------- | --------------- | ------------- | ---------- |
+| ![Main grid view](screenshots/gridview.jpg) | ![Full image view](screenshots/fullview.jpg) | ![Image details](screenshots/details.jpg) | ![App drawer](screenshots/drawer.jpg) |
 
-![Main grid view](screenshots/gridview.jpg)
+<!--### Main grid view-->
 
-### Full image view
+<!--![Main grid view](screenshots/gridview.jpg)-->
 
-![Full image view](screenshots/fullview.jpg)
+<!--### Full image view-->
 
-### Image details
+<!--![Full image view](screenshots/fullview.jpg)-->
 
-![Image details](screenshots/details.jpg)
+<!--### Image details-->
 
-### App drawer
+<!--![Image details](screenshots/details.jpg)-->
 
-![App drawer](screenshots/drawer.jpg)
+<!--### App drawer-->
+
+<!--![App drawer](screenshots/drawer.jpg)-->
 
 ## Changelog
 
 * **04.09.2019**
   * Added favourites list
   * Made history and favourites dismissable
+  * Added video progress bar
+  * If a video is playing, all other videos will autostart, if a video
+  is paused, all other videos will be paused as well
+  * Rating filter is now saved on change
 
 * **02.06.2019**
   * Webm files now show their gif thumbnail previews in grid view!
