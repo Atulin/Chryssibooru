@@ -335,7 +335,7 @@ class HomePageState extends State<HomePage> {
                   onTap: () => openInBrowser("https://github.com/Atulin/Chryssibooru"),
                   dense: true,
                 ),
-              ]
+              ],
             )
           ],
         ),

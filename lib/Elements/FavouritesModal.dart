@@ -56,7 +56,7 @@ class _FavouritesModal extends State<FavouritesModal> {
       ),
       content: new ListView.builder(
           padding: EdgeInsets.only(top: 5.0),
-          itemCount: _favourites.length,
+          itemCount: _favourites != null ? _favourites.length : 0,
           itemBuilder: (BuildContext context, int index) {
             return new Dismissible(
                 key: Key(_favourites[index]),
