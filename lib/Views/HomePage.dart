@@ -1,8 +1,11 @@
+import 'dart:ffi';
+
 import 'package:chryssibooru/API.dart';
 import 'package:chryssibooru/DerpisRepo.dart';
 import 'package:chryssibooru/Elements/FavouritesModal.dart';
 import 'package:chryssibooru/Elements/FilterSheet.dart';
 import 'package:chryssibooru/Elements/HistoryModal.dart';
+import 'package:chryssibooru/ImageList.dart';
 import 'package:chryssibooru/Views/ImageViewer.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_advanced_networkimage/provider.dart';
@@ -41,6 +44,10 @@ class HomePageState extends State<HomePage> {
   bool _q = false;
   bool _e = false;
 
+  Quality _quality;
+
+  String _headerImage;
+
   int cacheSize = 0;
   void getCacheSize() async {
     var cs = await DiskCache().cacheSize();
@@ -65,6 +72,7 @@ class HomePageState extends State<HomePage> {
   void initState() {
     getCacheSize();
     _getRatingPrefs();
+    _getQualityPrefs();
     _scrollController = ScrollController();
     _scrollController.addListener(_loadDerpisListener);
     super.initState();
@@ -81,12 +89,24 @@ class HomePageState extends State<HomePage> {
     }
   }
 
+  void _getQualityPrefs() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    setState(() {
+      _quality = Quality.values[prefs.getInt('quality') ?? Quality.Medium.index];
+    });
+  }
+  
+  void _saveQualityPrefs() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    prefs.setInt('quality', _quality.index);
+  }
+
   void _getRatingPrefs() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     setState(() {
-      _s = prefs.getBool('safe');
-      _q = prefs.getBool('questionable');
-      _e = prefs.getBool('explicit');
+      _s = prefs.getBool('safe') ?? _s;
+      _q = prefs.getBool('questionable') ?? _q;
+      _e = prefs.getBool('explicit') ?? _e;
     });
   }
 
@@ -122,6 +142,13 @@ class HomePageState extends State<HomePage> {
     } else return;
 
     prefs.setStringList("history", history);
+  }
+
+  void _setHeaderImage() async {
+    var derp = await getRandomImage('chrysalis, solo, transparent background');
+    setState(() {
+      _headerImage = derp.representations.medium;
+    });
   }
 
 
@@ -173,7 +200,8 @@ class HomePageState extends State<HomePage> {
                                         cacheRule: CacheRule(maxAge: const Duration(days: 7))
                                     ),
                                     placeholder: SvgPicture.asset('assets/logo.svg'),
-                                    loadingWidgetBuilder: (double progress) => Center(
+                                    loadingWidgetBuilder: (BuildContext ctx, double progress, _) => Padding(
+                                      padding: const EdgeInsets.all(40.0),
                                       child: CircularProgressIndicator(
                                         value: progress,
                                         semanticsValue: progress.toString(),
@@ -246,19 +274,24 @@ class HomePageState extends State<HomePage> {
                     builder: (BuildContext context) {
                       return FilterSheet(
                         safe: _s,
-                        safeChanged: (value) {
+                        safeChanged: (bool value) {
                           _s = value;
                           _saveRatingPrefs();
                         },
                         questionable: _q,
-                        questionableChanged: (value) {
+                        questionableChanged: (bool value) {
                           _q = value;
                           _saveRatingPrefs();
                         },
                         explicit: _e,
-                        explicitChanged: (value) {
+                        explicitChanged: (bool value) {
                           _e = value;
                           _saveRatingPrefs();
+                        },
+                        quality: _quality,
+                        qualityChanged: (Quality q) {
+                          _quality = q;
+                          _saveQualityPrefs();
                         },
                       );
                     },
@@ -274,14 +307,47 @@ class HomePageState extends State<HomePage> {
         child: ListView(
           children: <Widget>[
             DrawerHeader(
-              child: SvgPicture.asset('assets/logo.svg'),
+                child: Stack(
+                  alignment: Alignment.center,
+                  children: <Widget>[
+                    (){
+                      if (_headerImage != null) {
+                        return new TransitionToImage(
+                          image: AdvancedNetworkImage(
+                            'https:'+_headerImage,
+                            useDiskCache: true,
+                            cacheRule: CacheRule(maxAge: const Duration(days: 7)),
+                          ),
+                          placeholder: SvgPicture.asset('assets/logo.svg'),
+                          fit: BoxFit.cover,
+                        );
+                      } else {
+                        return SvgPicture.asset('assets/logo.svg');
+                      }
+                    }(),
+                    Positioned(
+                      child: IconButton(
+                        icon: Icon(Icons.refresh),
+                        onPressed: () => _setHeaderImage(),
+                        splashColor: Colors.transparent,
+                        color: Color.fromARGB(50, 255, 255, 255),
+                        iconSize: 20,
+                      ),
+                      right: 0.0,
+                      bottom: 0.0,
+                    )
+                  ],
+                ),
               decoration: BoxDecoration(
                 color: Color.fromARGB(1, 100, 150, 150)
               ),
             ),
             ListTile(
               title: Text("Enter API key"),
-              subtitle: Text("Get it on Derpibooru in account settings", style: TextStyle(fontSize: 12.0)),
+              subtitle: Text(
+                  repo.key == "" ? "Get it on Derpibooru in account settings" : "All set!",
+                  style: TextStyle(fontSize: 12.0)
+              ),
               leading: Icon(Icons.vpn_key),
               onTap: showKeySheet,
             ),

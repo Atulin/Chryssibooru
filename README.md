@@ -21,7 +21,7 @@ Derpibooru client made with Flutter
 
 ## Known bugs
 
-* An error screen will sometimes flash briefly when swiping between video files.
+* An error screen might sometimes flash briefly when swiping between video files.
   It soon disappears, though, and the video loads fine. Happens only on slower devices or when loading large files.
 
 ## Screenshots
@@ -30,23 +30,13 @@ Derpibooru client made with Flutter
 | -------------- | --------------- | ------------- | ---------- |
 | ![Main grid view](screenshots/gridview.jpg) | ![Full image view](screenshots/fullview.jpg) | ![Image details](screenshots/details.jpg) | ![App drawer](screenshots/drawer.jpg) |
 
-<!--### Main grid view-->
-
-<!--![Main grid view](screenshots/gridview.jpg)-->
-
-<!--### Full image view-->
-
-<!--![Full image view](screenshots/fullview.jpg)-->
-
-<!--### Image details-->
-
-<!--![Image details](screenshots/details.jpg)-->
-
-<!--### App drawer-->
-
-<!--![App drawer](screenshots/drawer.jpg)-->
-
 ## Changelog
+
+* **27.11.2019**
+  * Fixed video playing in the background when scrolled to another image
+  * Added image zoom – pinch out to zoom, double-tap to reset
+  * Added image quality selection in the filter sheet
+  * Added random Chryssi in the header
 
 * **04.09.2019**
   * Added favourites list

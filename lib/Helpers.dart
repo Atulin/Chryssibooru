@@ -1,3 +1,4 @@
+import 'package:chryssibooru/DerpisRepo.dart';
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:image_downloader/image_downloader.dart';
@@ -33,5 +34,28 @@ Future downloadImage(String url) async {
     }
   } catch (error) {
     debugPrint(error);
+  }
+}
+
+enum Quality {
+  Low,
+  Medium,
+  High,
+  Source
+}
+
+String getImageOfQuality(Quality quality, DerpisRepo repo, int index) {
+  switch (quality) {
+    case Quality.Low:
+      return repo.derpis[index].representations.small;
+    case Quality.Medium:
+      return repo.derpis[index].representations.medium;
+    case Quality.High:
+      return repo.derpis[index].representations.large;
+    case Quality.Source:
+      return repo.derpis[index].representations.full;
+    // Default has to be there or the linter starts bitching ¯\_(ツ)_/¯
+    default:
+      return repo.derpis[index].representations.medium;
   }
 }
