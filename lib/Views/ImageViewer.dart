@@ -4,8 +4,10 @@ import 'package:flutter_advanced_networkimage/transition.dart';
 import 'package:chryssibooru/API.dart';
 import 'package:chryssibooru/DerpisRepo.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_advanced_networkimage/zoomable.dart';
 import 'package:provider/provider.dart';
 import 'package:share/share.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:video_player/video_player.dart';
 import 'package:percent_indicator/linear_percent_indicator.dart';
 
@@ -42,6 +44,13 @@ class ImageViewerState extends State<ImageViewer> {
 
   double _videoProgressPercent = 0.0;
 
+  // For disabling the PageView when image is zoomed in
+  bool _isPageViewDisabled = false;
+
+  // Preferred image quality
+  Quality _quality;
+
+
   @override
   void dispose() {
     _videoController.dispose();
@@ -76,6 +85,8 @@ class ImageViewerState extends State<ImageViewer> {
 
     _pageController = PageController(initialPage: initialIndex);
     _pageController.addListener(_loadDerpisListener);
+
+    _getQualityPrefs();
 
     super.initState();
   }
@@ -113,6 +124,13 @@ class ImageViewerState extends State<ImageViewer> {
     }
   }
 
+  void _getQualityPrefs() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    setState(() {
+      _quality = Quality.values[prefs.getInt('quality') ?? Quality.Medium.index];
+    });
+  }
+
   @override
   Widget build(BuildContext mainContext) {
     return Scaffold(
@@ -120,21 +138,34 @@ class ImageViewerState extends State<ImageViewer> {
         child: PageView.builder(
           controller: _pageController,
           itemCount: repo.derpis.length,
-          physics: BouncingScrollPhysics(),
+          physics: _isPageViewDisabled ? NeverScrollableScrollPhysics() : BouncingScrollPhysics(),
           itemBuilder: (BuildContext context, int index) {
             return Center(child: () {
               if (repo.derpis[index].mimeType != MimeType.VIDEO_WEBM) {
-                return new TransitionToImage(
-                  image: AdvancedNetworkImage(
-                      "https:" + repo.derpis[index].representations.medium,
-                      useDiskCache: true,
-                      cacheRule: CacheRule(maxAge: const Duration(days: 7))),
-                  placeholder: Image(image: AssetImage('assets/logo-medium.png')),
-                  loadingWidgetBuilder: (double progress) => CircularProgressIndicator(
+                return ZoomableWidget (
+                  minScale: 1.0,
+                  maxScale: 5.0,
+                  autoCenter: true,
+                  onZoomChanged: (double zoom) {
+                    setState(() {
+                      _isPageViewDisabled = zoom > 1.0 ? true : false;
+                    });
+                  },
+                  child: Container(
+                    child: TransitionToImage(
+                      image: AdvancedNetworkImage(
+                          "https:" +  getImageOfQuality(_quality, repo, index),
+                          useDiskCache: true,
+                          cacheRule: CacheRule(maxAge: const Duration(days: 7))
+                      ),
+                      placeholder: Image(image: AssetImage('assets/logo-medium.png')),
+                      loadingWidgetBuilder: (BuildContext ctx, double progress, _) => CircularProgressIndicator(
                         value: progress,
                         semanticsValue: progress.toString(),
                       ),
-                  fit: BoxFit.contain,
+                      fit: BoxFit.contain,
+                    ),
+                  ),
                 );
               } else {
                 return Stack(
@@ -204,6 +235,7 @@ class ImageViewerState extends State<ImageViewer> {
             setState(() {
               _id = pageId.round();
               _videoProgressPercent = 0.0;
+              _videoController.pause();
             });
           },
         ),
@@ -501,7 +533,7 @@ class ImageViewerState extends State<ImageViewer> {
                           ),
                         ),
                       ),
-                    )
+                    ),
                   ],
                 );
               });

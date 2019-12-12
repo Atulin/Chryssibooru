@@ -1,17 +1,23 @@
+import 'package:chryssibooru/Helpers.dart';
 import 'package:flutter/material.dart';
 
 class FilterSheet extends StatefulWidget {
   FilterSheet({
     @required this.safe, @required this.questionable, @required this.explicit,
-    @required this.safeChanged, @required this.questionableChanged, @required this.explicitChanged
+    @required this.safeChanged, @required this.questionableChanged, @required this.explicitChanged,
+    @required this.quality, @required this.qualityChanged
   });
 
   final bool safe;
   final bool questionable;
   final bool explicit;
-  final ValueChanged safeChanged;
-  final ValueChanged questionableChanged;
-  final ValueChanged explicitChanged;
+
+  final ValueChanged<bool> safeChanged;
+  final ValueChanged<bool> questionableChanged;
+  final ValueChanged<bool> explicitChanged;
+
+  final Quality quality;
+  final ValueChanged<Quality> qualityChanged;
 
   @override
   _FilterSheet createState() => _FilterSheet();
@@ -22,11 +28,14 @@ class _FilterSheet extends State<FilterSheet> {
   bool _questionable;
   bool _explicit;
 
+  Quality _quality;
+
   @override
   void initState() {
     _safe = widget.safe;
     _questionable = widget.questionable;
     _explicit = widget.explicit;
+    _quality = widget.quality;
     super.initState();
   }
 
@@ -68,9 +77,33 @@ class _FilterSheet extends State<FilterSheet> {
           },
           dense: true,
         ),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.start,
+          children: <Widget>[
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 8, 8, 8),
+              child: Text('Image quality:'),
+            ),
+            new DropdownButton<Quality>(
+              value: _quality,
+                items: Quality.values.map((Quality q) {
+                  return DropdownMenuItem<Quality> (
+                    value: q,
+                    child: Text(q.toString().split('.')[1]),
+                  );
+                }).toList(),
+                onChanged: (Quality q) {
+                  setState(() {
+                    _quality = q;
+                    widget.qualityChanged(q);
+                  });
+                }
+            ),
+          ],
+        ),
         new ListTile(
 
-        )
+        ),
       ],
     );
   }

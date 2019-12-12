@@ -27,3 +27,10 @@ Future<List<Derpi>> searchImages(String query, bool s, bool q, bool e, String ke
 
   return derpis;
 }
+
+Future<Derpi> getRandomImage(String query) {
+  String apiUrl = "https://derpibooru.org/search.json?q=";
+  apiUrl += query.replaceAll(' ', '+');
+  apiUrl += '%2Cscore.gt:10&random_image=y';
+  return fetchSingleDerpi(apiUrl);
+}
