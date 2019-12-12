@@ -32,6 +32,9 @@ Derpibooru client made with Flutter
 
 ## Changelog
 
+* **12.12.2019**
+  * Changed the "about" popup slightly
+
 * **27.11.2019**
   * Fixed video playing in the background when scrolled to another image
   * Added image zoom – pinch out to zoom, double-tap to reset

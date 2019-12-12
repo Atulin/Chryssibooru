@@ -1,5 +1,3 @@
-import 'dart:ffi';
-
 import 'package:chryssibooru/API.dart';
 import 'package:chryssibooru/DerpisRepo.dart';
 import 'package:chryssibooru/Elements/FavouritesModal.dart';
@@ -10,12 +8,14 @@ import 'package:chryssibooru/Views/ImageViewer.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_advanced_networkimage/provider.dart';
 import 'package:flutter_advanced_networkimage/transition.dart';
+import 'package:get_version/get_version.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
 import '../Helpers.dart';
+import '../Updates.dart';
 
 
 
@@ -27,7 +27,6 @@ class HomePage extends StatefulWidget {
   @override
   HomePageState createState() => HomePageState();
 }
-
 
 
 class HomePageState extends State<HomePage> {
@@ -48,6 +47,9 @@ class HomePageState extends State<HomePage> {
 
   String _headerImage;
 
+  String currentVersion;
+  ReleaseData newRelease;
+
   int cacheSize = 0;
   void getCacheSize() async {
     var cs = await DiskCache().cacheSize();
@@ -60,7 +62,6 @@ class HomePageState extends State<HomePage> {
     getCacheSize();
   }
 
-
   @override
   didChangeDependencies() {
     repo = Provider.of<DerpisRepo>(context);
@@ -71,6 +72,7 @@ class HomePageState extends State<HomePage> {
   @override
   void initState() {
     getCacheSize();
+    _getCurrentVersion();
     _getRatingPrefs();
     _getQualityPrefs();
     _scrollController = ScrollController();
@@ -87,6 +89,13 @@ class HomePageState extends State<HomePage> {
         repo.loadDerpis();
       });
     }
+  }
+
+  void _getCurrentVersion() async {
+    var current = await GetVersion.projectVersion;
+    setState(() {
+      currentVersion = current;
+    });
   }
 
   void _getQualityPrefs() async {
@@ -145,7 +154,7 @@ class HomePageState extends State<HomePage> {
   }
 
   void _setHeaderImage() async {
-    var derp = await getRandomImage('chrysalis, solo, transparent background');
+    var derp = await getRandomImage('chrysalis, solo, transparent background, -webm');
     setState(() {
       _headerImage = derp.representations.medium;
     });
@@ -394,12 +403,11 @@ class HomePageState extends State<HomePage> {
             AboutListTile(
               applicationIcon: SvgPicture.asset('assets/logo.svg', height: 20, width: 20,),
               icon: Icon(Icons.info_outline),
+              applicationVersion: currentVersion,
               aboutBoxChildren: <Widget>[
-                ListTile(
-                  title: Text("Github"),
-                  leading: Icon(Icons.compare_arrows),
-                  onTap: () => openInBrowser("https://github.com/Atulin/Chryssibooru"),
-                  dense: true,
+                RaisedButton(
+                  child: Text("Github repo"),
+                  onPressed: () => openInBrowser("https://github.com/Atulin/Chryssibooru"),
                 ),
               ],
             )

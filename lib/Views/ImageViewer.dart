@@ -154,7 +154,7 @@ class ImageViewerState extends State<ImageViewer> {
                   child: Container(
                     child: TransitionToImage(
                       image: AdvancedNetworkImage(
-                          "https:" +  getImageOfQuality(_quality, repo, index),//repo.derpis[index].representations.medium,
+                          "https:" +  getImageOfQuality(_quality, repo, index),
                           useDiskCache: true,
                           cacheRule: CacheRule(maxAge: const Duration(days: 7))
                       ),
