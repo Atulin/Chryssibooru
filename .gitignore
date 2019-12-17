@@ -29,13 +29,13 @@
 build/
 
 # Android related
-**/android/**/gradle-wrapper.jar
-**/android/.gradle
-**/android/captures/
-**/android/gradlew
-**/android/gradlew.bat
-**/android/local.properties
-**/android/**/GeneratedPluginRegistrant.java
+android-fuck/**/gradle-wrapper.jar
+android-fuck/.gradle
+android-fuck/captures/
+android-fuck/gradlew
+android-fuck/gradlew.bat
+android-fuck/local.properties
+android-fuck/**/GeneratedPluginRegistrant.java
 
 # iOS/XCode related
 **/ios/**/*.mode1v3
@@ -72,5 +72,6 @@ build/
 
 /.gradle/
 *.afdesign
-/android/keystore.properties
+/android-fuck/keystore.properties
 /release-shortcut.lnk
+/.flutter-plugins-dependencies

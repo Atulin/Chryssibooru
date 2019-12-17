@@ -1,4 +1,4 @@
-import 'package:chryssibooru/API.dart';
+import 'package:chryssibooru/API/v1/API.dart';
 import 'package:chryssibooru/DerpisRepo.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';

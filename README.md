@@ -32,6 +32,11 @@ Derpibooru client made with Flutter
 
 ## Changelog
 
+* **17.12.2019**
+  * Updated to use AndroidX
+  * Updated Flutter to 1.12.13
+  * Updated Dart to 7.2.0
+
 * **12.12.2019**
   * Changed the "about" popup slightly
 

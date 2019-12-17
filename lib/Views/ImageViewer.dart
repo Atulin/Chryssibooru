@@ -1,7 +1,7 @@
 import 'package:flutter/services.dart';
 import 'package:flutter_advanced_networkimage/provider.dart';
 import 'package:flutter_advanced_networkimage/transition.dart';
-import 'package:chryssibooru/API.dart';
+import 'package:chryssibooru/API/v1/API.dart';
 import 'package:chryssibooru/DerpisRepo.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_advanced_networkimage/zoomable.dart';
@@ -65,7 +65,8 @@ class ImageViewerState extends State<ImageViewer> {
     _videoController = VideoPlayerController.network('https:'+repo.derpis[_id].representations.medium)
     ..addListener(() {
       setState(() {
-        _videoProgressPercent = (_videoController.value.position.inMilliseconds / _videoController.value.duration.inMilliseconds).clamp(0.0, 1.0);
+        if (_videoController.value.duration != null)
+          _videoProgressPercent = (_videoController.value.position.inMilliseconds / _videoController.value.duration.inMilliseconds).clamp(0.0, 1.0);
       });
     })
     ..initialize().then((_) {
@@ -92,7 +93,6 @@ class ImageViewerState extends State<ImageViewer> {
   }
 
   void _loadDerpisListener() {
-    debugPrint(_volume.toString());
     // Swap the video
     if (_pageController.page.round() != _currentPage) {
       if (repo.derpis[_pageController.page.round()].mimeType == MimeType.VIDEO_WEBM) {

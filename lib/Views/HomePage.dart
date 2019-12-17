@@ -1,9 +1,9 @@
-import 'package:chryssibooru/API.dart';
+import 'package:chryssibooru/API/v1/API.dart';
 import 'package:chryssibooru/DerpisRepo.dart';
 import 'package:chryssibooru/Elements/FavouritesModal.dart';
 import 'package:chryssibooru/Elements/FilterSheet.dart';
 import 'package:chryssibooru/Elements/HistoryModal.dart';
-import 'package:chryssibooru/ImageList.dart';
+import 'package:chryssibooru/API/v1/ImageList.dart';
 import 'package:chryssibooru/Views/ImageViewer.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_advanced_networkimage/provider.dart';

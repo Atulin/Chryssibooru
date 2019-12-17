@@ -1,6 +1,6 @@
 import 'dart:convert';
 
-import 'package:chryssibooru/API.dart';
+import 'package:chryssibooru/API/v1/API.dart';
 import 'package:http/http.dart' as http;
 
 Future<List<Derpi>> fetchDerpi(String url) async {
