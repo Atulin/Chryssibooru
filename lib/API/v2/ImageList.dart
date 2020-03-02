@@ -4,7 +4,7 @@ import 'package:flutter/foundation.dart';
 
 
 Future<List<Derpi>> searchImages(String query, bool s, bool q, bool e, String key, [int page = 1, int limit = 30]) {
-  const api_url = "https://derpibooru.org/search.json?";
+  const api_url = "https://derpibooru.org/api/v1/json/search/images?";
 
   var ratingsArr = [];
   if (s) ratingsArr.add("safe");
@@ -17,7 +17,7 @@ Future<List<Derpi>> searchImages(String query, bool s, bool q, bool e, String ke
   if ( !( (s&&q&&e) || (!s&&!q&&!e) ) ) queryString += "%2C (" + ratings + ")";
                                 queryString += "&page="    + page.toString();
   if (key != "" || key != null) queryString += "&key="     + key;
-  if (key == "" || key == null) queryString += "&perpage=" + limit.toString();
+  if (key == "" || key == null) queryString += "&per_page=" + limit.toString();
 
   var escapedQuery = queryString.replaceAll(" ", "+");
 

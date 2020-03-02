@@ -15,250 +15,277 @@ String derpibooruToJson(Derpibooru data) {
 }
 
 class Derpibooru {
-  List<Derpi> search;
-  int total;
+  List<Derpi> images;
   List<dynamic> interactions;
+  int total;
 
   Derpibooru({
-    this.search,
-    this.total,
+    this.images,
     this.interactions,
+    this.total,
   });
 
-  factory Derpibooru.fromJson(Map<String, dynamic> json) => new Derpibooru(
-    search: new List<Derpi>.from(json["search"].map((x) => Derpi.fromJson(x))),
+  factory Derpibooru.fromRawJson(String str) => Derpibooru.fromJson(json.decode(str));
+
+  String toRawJson() => json.encode(toJson());
+
+  factory Derpibooru.fromJson(Map<String, dynamic> json) => Derpibooru(
+    images: List<Derpi>.from(json["images"].map((x) => Derpi.fromJson(x))),
+    interactions: List<dynamic>.from(json["interactions"].map((x) => x)),
     total: json["total"],
-    interactions: new List<dynamic>.from(json["interactions"].map((x) => x)),
   );
 
   Map<String, dynamic> toJson() => {
-    "search": new List<dynamic>.from(search.map((x) => x.toJson())),
+    "images": List<dynamic>.from(images.map((x) => x.toJson())),
+    "interactions": List<dynamic>.from(interactions.map((x) => x)),
     "total": total,
-    "interactions": new List<dynamic>.from(interactions.map((x) => x)),
   };
 }
 
 class Derpi {
-  int id;
-  String createdAt;
-  String updatedAt;
-  String firstSeenAt;
-  int score;
-  int commentCount;
-  int width;
-  int height;
-  String fileName;
-  String description;
-  String uploader;
-  int uploaderId;
-  String image;
-  int upvotes;
-  int downvotes;
-  int faves;
-  List<Tag> tags;
-  List<int> tagIds;
-  double aspectRatio;
-  OriginalFormat originalFormat;
-  MimeType mimeType;
-  String sha512Hash;
+  Format format;
   String origSha512Hash;
+  DateTime firstSeenAt;
+  double wilsonScore;
+  int uploaderId;
+  int upvotes;
+  int duplicateOf;
+  String description;
+  String viewUrl;
   String sourceUrl;
+  DateTime updatedAt;
+  List<String> tags;
+  int downvotes;
+  int commentCount;
   Representations representations;
-  bool isRendered;
-  bool isOptimized;
+  int score;
+  int width;
+  String deletionReason;
+  int height;
+  bool spoilered;
+  int faves;
+  bool processed;
+  Intensities intensities;
+  String uploader;
+  double aspectRatio;
+  int tagCount;
+  List<int> tagIds;
+  int id;
+  bool thumbnailsGenerated;
+  bool hiddenFromUsers;
+  MimeType mimeType;
+  String name;
+  DateTime createdAt;
+  String sha512Hash;
 
   Derpi({
-    this.id,
-    this.createdAt,
-    this.updatedAt,
-    this.firstSeenAt,
-    this.score,
-    this.commentCount,
-    this.width,
-    this.height,
-    this.fileName,
-    this.description,
-    this.uploader,
-    this.uploaderId,
-    this.image,
-    this.upvotes,
-    this.downvotes,
-    this.faves,
-    this.tags,
-    this.tagIds,
-    this.aspectRatio,
-    this.originalFormat,
-    this.mimeType,
-    this.sha512Hash,
+    this.format,
     this.origSha512Hash,
+    this.firstSeenAt,
+    this.wilsonScore,
+    this.uploaderId,
+    this.upvotes,
+    this.duplicateOf,
+    this.description,
+    this.viewUrl,
     this.sourceUrl,
+    this.updatedAt,
+    this.tags,
+    this.downvotes,
+    this.commentCount,
     this.representations,
-    this.isRendered,
-    this.isOptimized,
+    this.score,
+    this.width,
+    this.deletionReason,
+    this.height,
+    this.spoilered,
+    this.faves,
+    this.processed,
+    this.intensities,
+    this.uploader,
+    this.aspectRatio,
+    this.tagCount,
+    this.tagIds,
+    this.id,
+    this.thumbnailsGenerated,
+    this.hiddenFromUsers,
+    this.mimeType,
+    this.name,
+    this.createdAt,
+    this.sha512Hash,
   });
 
-  factory Derpi.fromJson(Map<String, dynamic> json) => new Derpi(
-    id: json["id"],
-    createdAt: json["created_at"],
-    updatedAt: json["updated_at"],
-    firstSeenAt: json["first_seen_at"],
-    score: json["score"],
-    commentCount: json["comment_count"],
-    width: json["width"],
-    height: json["height"],
-    fileName: json["file_name"],
-    description: json["description"],
-    uploader: json["uploader"],
-    uploaderId: json["uploader_id"] == null ? null : json["uploader_id"],
-    image: json["image"],
-    upvotes: json["upvotes"],
-    downvotes: json["downvotes"],
-    faves: json["faves"],
-    tags: Tag.parse(json["tags"]),
-    tagIds: new List<int>.from(json["tag_ids"].map((x) => x)),
-    aspectRatio: json["aspect_ratio"].toDouble(),
-    originalFormat: originalFormatValues.map[json["original_format"]],
-    mimeType: mimeTypeValues.map[json["mime_type"]],
-    sha512Hash: json["sha512_hash"],
+  factory Derpi.fromRawJson(String str) => Derpi.fromJson(json.decode(str));
+
+  String toRawJson() => json.encode(toJson());
+
+  factory Derpi.fromJson(Map<String, dynamic> json) => Derpi(
+    format: formatValues.map[json["format"]],
     origSha512Hash: json["orig_sha512_hash"],
-    sourceUrl: json["source_url"],
+    firstSeenAt: DateTime.parse(json["first_seen_at"]),
+    wilsonScore: json["wilson_score"].toDouble(),
+    uploaderId: json["uploader_id"] == null ? null : json["uploader_id"],
+    upvotes: json["upvotes"],
+    duplicateOf: json["duplicate_of"],
+    description: json["description"],
+    viewUrl: json["view_url"],
+    sourceUrl: json["source_url"] == null ? null : json["source_url"],
+    updatedAt: DateTime.parse(json["updated_at"]),
+    tags: List<String>.from(json["tags"].map((x) => x)),
+    downvotes: json["downvotes"],
+    commentCount: json["comment_count"],
     representations: Representations.fromJson(json["representations"]),
-    isRendered: json["is_rendered"],
-    isOptimized: json["is_optimized"],
+    score: json["score"],
+    width: json["width"],
+    deletionReason: json["deletion_reason"],
+    height: json["height"],
+    spoilered: json["spoilered"],
+    faves: json["faves"],
+    processed: json["processed"],
+    intensities: Intensities.fromJson(json["intensities"]),
+    uploader: json["uploader"] == null ? null : json["uploader"],
+    aspectRatio: json["aspect_ratio"].toDouble(),
+    tagCount: json["tag_count"],
+    tagIds: List<int>.from(json["tag_ids"].map((x) => x)),
+    id: json["id"],
+    thumbnailsGenerated: json["thumbnails_generated"],
+    hiddenFromUsers: json["hidden_from_users"],
+    mimeType: mimeTypeValues.map[json["mime_type"]],
+    name: json["name"],
+    createdAt: DateTime.parse(json["created_at"]),
+    sha512Hash: json["sha512_hash"],
   );
 
   Map<String, dynamic> toJson() => {
-    "id": id,
-    "created_at": createdAt,
-    "updated_at": updatedAt,
-    "first_seen_at": firstSeenAt,
-    "score": score,
-    "comment_count": commentCount,
-    "width": width,
-    "height": height,
-    "file_name": fileName,
-    "description": description,
-    "uploader": uploader,
-    "uploader_id": uploaderId == null ? null : uploaderId,
-    "image": image,
-    "upvotes": upvotes,
-    "downvotes": downvotes,
-    "faves": faves,
-    "tags": tags,
-    "tag_ids": new List<dynamic>.from(tagIds.map((x) => x)),
-    "aspect_ratio": aspectRatio,
-    "original_format": originalFormatValues.reverse[originalFormat],
-    "mime_type": mimeTypeValues.reverse[mimeType],
-    "sha512_hash": sha512Hash,
+    "format": formatValues.reverse[format],
     "orig_sha512_hash": origSha512Hash,
-    "source_url": sourceUrl,
+    "first_seen_at": firstSeenAt.toIso8601String(),
+    "wilson_score": wilsonScore,
+    "uploader_id": uploaderId == null ? null : uploaderId,
+    "upvotes": upvotes,
+    "duplicate_of": duplicateOf,
+    "description": description,
+    "view_url": viewUrl,
+    "source_url": sourceUrl == null ? null : sourceUrl,
+    "updated_at": updatedAt.toIso8601String(),
+    "tags": List<dynamic>.from(tags.map((x) => x)),
+    "downvotes": downvotes,
+    "comment_count": commentCount,
     "representations": representations.toJson(),
-    "is_rendered": isRendered,
-    "is_optimized": isOptimized,
+    "score": score,
+    "width": width,
+    "deletion_reason": deletionReason,
+    "height": height,
+    "spoilered": spoilered,
+    "faves": faves,
+    "processed": processed,
+    "intensities": intensities.toJson(),
+    "uploader": uploader == null ? null : uploader,
+    "aspect_ratio": aspectRatio,
+    "tag_count": tagCount,
+    "tag_ids": List<dynamic>.from(tagIds.map((x) => x)),
+    "id": id,
+    "thumbnails_generated": thumbnailsGenerated,
+    "hidden_from_users": hiddenFromUsers,
+    "mime_type": mimeTypeValues.reverse[mimeType],
+    "name": name,
+    "created_at": createdAt.toIso8601String(),
+    "sha512_hash": sha512Hash,
   };
 }
 
-enum MimeType { IMAGE_JPEG, IMAGE_PNG, VIDEO_WEBM }
+enum Format { PNG, JPG }
 
-final mimeTypeValues = new EnumValues({
+final formatValues = EnumValues({
+  "jpg": Format.JPG,
+  "png": Format.PNG
+});
+
+class Intensities {
+  double ne;
+  double nw;
+  double se;
+  double sw;
+
+  Intensities({
+    this.ne,
+    this.nw,
+    this.se,
+    this.sw,
+  });
+
+  factory Intensities.fromRawJson(String str) => Intensities.fromJson(json.decode(str));
+
+  String toRawJson() => json.encode(toJson());
+
+  factory Intensities.fromJson(Map<String, dynamic> json) => Intensities(
+    ne: json["ne"].toDouble(),
+    nw: json["nw"].toDouble(),
+    se: json["se"].toDouble(),
+    sw: json["sw"].toDouble(),
+  );
+
+  Map<String, dynamic> toJson() => {
+    "ne": ne,
+    "nw": nw,
+    "se": se,
+    "sw": sw,
+  };
+}
+
+enum MimeType { IMAGE_PNG, IMAGE_JPEG }
+
+final mimeTypeValues = EnumValues({
   "image/jpeg": MimeType.IMAGE_JPEG,
-  "image/png": MimeType.IMAGE_PNG,
-  "video/webm": MimeType.VIDEO_WEBM
-});
-
-enum OriginalFormat { JPEG, PNG, WEBM }
-
-final originalFormatValues = new EnumValues({
-  "jpeg": OriginalFormat.JPEG,
-  "png": OriginalFormat.PNG,
-  "webm": OriginalFormat.WEBM
-});
-
-enum TagType { ARTIST, SPOILER, OC }
-
-final tagTypeValues = new EnumValues({
-  "artist": TagType.ARTIST,
-  "spoiler": TagType.SPOILER,
-  "oc": TagType.OC
+  "image/png": MimeType.IMAGE_PNG
 });
 
 class Representations {
-  String thumbTiny;
-  String thumbSmall;
-  String thumb;
-  String small;
-  String medium;
-  String large;
-  String tall;
   String full;
-  String webm;
-  String mp4;
+  String large;
+  String medium;
+  String small;
+  String tall;
+  String thumb;
+  String thumbSmall;
+  String thumbTiny;
 
   Representations({
-    this.thumbTiny,
-    this.thumbSmall,
-    this.thumb,
-    this.small,
-    this.medium,
-    this.large,
-    this.tall,
     this.full,
-    this.webm,
-    this.mp4,
+    this.large,
+    this.medium,
+    this.small,
+    this.tall,
+    this.thumb,
+    this.thumbSmall,
+    this.thumbTiny,
   });
 
-  factory Representations.fromJson(Map<String, dynamic> json) => new Representations(
-    thumbTiny: json["thumb_tiny"],
-    thumbSmall: json["thumb_small"],
-    thumb: json["thumb"],
-    small: json["small"],
-    medium: json["medium"],
-    large: json["large"],
-    tall: json["tall"],
+  factory Representations.fromRawJson(String str) => Representations.fromJson(json.decode(str));
+
+  String toRawJson() => json.encode(toJson());
+
+  factory Representations.fromJson(Map<String, dynamic> json) => Representations(
     full: json["full"],
-    webm: json["webm"] == null ? null : json["webm"],
-    mp4: json["mp4"] == null ? null : json["mp4"],
+    large: json["large"],
+    medium: json["medium"],
+    small: json["small"],
+    tall: json["tall"],
+    thumb: json["thumb"],
+    thumbSmall: json["thumb_small"],
+    thumbTiny: json["thumb_tiny"],
   );
 
   Map<String, dynamic> toJson() => {
-    "thumb_tiny": thumbTiny,
-    "thumb_small": thumbSmall,
-    "thumb": thumb,
-    "small": small,
-    "medium": medium,
-    "large": large,
-    "tall": tall,
     "full": full,
-    "webm": webm == null ? null : webm,
-    "mp4": mp4 == null ? null : mp4,
+    "large": large,
+    "medium": medium,
+    "small": small,
+    "tall": tall,
+    "thumb": thumb,
+    "thumb_small": thumbSmall,
+    "thumb_tiny": thumbTiny,
   };
-}
-
-class Tag {
-  TagType type;
-  String label;
-
-  Tag(String tag) {
-    var splitTag = tag.split(':');
-    if (splitTag.length >= 2) {
-      this.type = tagTypeValues.map[splitTag[0]];
-      this.label = tag;
-    } else {
-      this.label = tag;
-    }
-  }
-
-  static List<Tag> parse(String tags) {
-    List<Tag> outTags = new List<Tag>();
-    if (tags != null){
-      for (String t in tags.split(', ')) {
-        outTags.add(new Tag(t));
-      }
-    } else {
-      outTags.add(new Tag('No tags ¯\\_(ツ)_/¯'));
-    }
-    return outTags;
-  }
 }
 
 class EnumValues<T> {
