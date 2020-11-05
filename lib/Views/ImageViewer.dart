@@ -5,7 +5,7 @@ import 'package:chryssibooru/API/v2/API.dart';
 import 'package:chryssibooru/DerpisRepo.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_advanced_networkimage/zoomable.dart';
-import 'package:provider/provider.dart';
+import 'package:provider/provider.dart' as p;
 import 'package:share/share.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:video_player/video_player.dart';
@@ -59,7 +59,7 @@ class ImageViewerState extends State<ImageViewer> {
 
   @override
   didChangeDependencies() {
-    repo = Provider.of<DerpisRepo>(context);
+    repo = p.Provider.of<DerpisRepo>(context);
 
     _videoController?.dispose();
     _videoController = VideoPlayerController.network(repo.derpis[_id].representations.medium)

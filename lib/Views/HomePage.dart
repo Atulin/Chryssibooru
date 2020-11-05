@@ -9,7 +9,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_advanced_networkimage/provider.dart';
 import 'package:flutter_advanced_networkimage/transition.dart';
 import 'package:get_version/get_version.dart';
-import 'package:provider/provider.dart';
+import 'package:provider/provider.dart' as p;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:flutter_svg/flutter_svg.dart';
@@ -64,7 +64,7 @@ class HomePageState extends State<HomePage> {
 
   @override
   didChangeDependencies() {
-    repo = Provider.of<DerpisRepo>(context);
+    repo = p.Provider.of<DerpisRepo>(context);
 
     super.didChangeDependencies();
   }
