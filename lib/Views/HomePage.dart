@@ -1,4 +1,4 @@
-import 'package:chryssibooru/API/v1/API.dart';
+import 'package:chryssibooru/API/v2/API.dart';
 import 'package:chryssibooru/DerpisRepo.dart';
 import 'package:chryssibooru/Elements/FavouritesModal.dart';
 import 'package:chryssibooru/Elements/FilterSheet.dart';
@@ -196,7 +196,7 @@ class HomePageState extends State<HomePage> {
                               child: ClipRRect(
                                 borderRadius:new BorderRadius.all(Radius.circular(10.0)),
                                 child: (){
-                                  String url = "https:" + repo.derpis[index].representations.thumb;
+                                  String url = repo.derpis[index].representations.thumb;
                                   if(repo.derpis[index].mimeType == MimeType.VIDEO_WEBM){
                                     List<String> parts = url.split('.');
                                     parts[parts.length-1] = 'gif';

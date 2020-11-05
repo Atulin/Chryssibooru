@@ -1,7 +1,7 @@
 import 'package:flutter/services.dart';
 import 'package:flutter_advanced_networkimage/provider.dart';
 import 'package:flutter_advanced_networkimage/transition.dart';
-import 'package:chryssibooru/API/v1/API.dart';
+import 'package:chryssibooru/API/v2/API.dart';
 import 'package:chryssibooru/DerpisRepo.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_advanced_networkimage/zoomable.dart';
@@ -62,7 +62,7 @@ class ImageViewerState extends State<ImageViewer> {
     repo = Provider.of<DerpisRepo>(context);
 
     _videoController?.dispose();
-    _videoController = VideoPlayerController.network('https:'+repo.derpis[_id].representations.medium)
+    _videoController = VideoPlayerController.network(repo.derpis[_id].representations.medium)
     ..addListener(() {
       setState(() {
         if (_videoController.value.duration != null)
@@ -97,7 +97,7 @@ class ImageViewerState extends State<ImageViewer> {
     if (_pageController.page.round() != _currentPage) {
       if (repo.derpis[_pageController.page.round()].mimeType == MimeType.VIDEO_WEBM) {
         _videoController?.dispose();
-        _videoController = VideoPlayerController.network('https:'+repo.derpis[_pageController.page.round()].representations.medium)
+        _videoController = VideoPlayerController.network(repo.derpis[_pageController.page.round()].representations.medium)
         ..addListener(() {
           setState(() {
             _videoProgressPercent = (_videoController.value.position.inMilliseconds / _videoController.value.duration.inMilliseconds).clamp(0.0, 1.0);
@@ -154,7 +154,7 @@ class ImageViewerState extends State<ImageViewer> {
                   child: Container(
                     child: TransitionToImage(
                       image: AdvancedNetworkImage(
-                          "https:" +  getImageOfQuality(_quality, repo, index),
+                          getImageOfQuality(_quality, repo, index),
                           useDiskCache: true,
                           cacheRule: CacheRule(maxAge: const Duration(days: 7))
                       ),

@@ -32,6 +32,9 @@ Derpibooru client made with Flutter
 
 ## Changelog
 
+* **05.11.2020**
+  * Updated to work with the new Derpibooru API
+
 * **17.12.2019**
   * Updated to use AndroidX
   * Updated Flutter to 1.12.13

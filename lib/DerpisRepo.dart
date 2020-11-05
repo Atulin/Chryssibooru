@@ -1,5 +1,5 @@
-import 'package:chryssibooru/API/v1/API.dart';
-import 'package:chryssibooru/API/v1/ImageList.dart';
+import 'package:chryssibooru/API/v2/API.dart';
+import 'package:chryssibooru/API/v2/ImageList.dart';
 import 'package:flutter/material.dart';
 
 class DerpisRepo extends ChangeNotifier {

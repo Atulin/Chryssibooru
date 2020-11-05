@@ -1,4 +1,4 @@
-import 'package:chryssibooru/API/v1/API.dart';
+import 'package:chryssibooru/API/v2/API.dart';
 import 'package:chryssibooru/Connect.dart';
 import 'package:flutter/foundation.dart';
 

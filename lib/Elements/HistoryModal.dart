@@ -1,8 +1,7 @@
-import 'package:chryssibooru/API/v1/API.dart';
+import 'package:chryssibooru/API/v2/API.dart';
 import 'package:chryssibooru/DerpisRepo.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:flutter_slidable/flutter_slidable.dart';
 
 class HistoryModal extends StatefulWidget {
   HistoryModal({@required this.repo});

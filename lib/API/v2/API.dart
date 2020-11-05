@@ -54,7 +54,7 @@ class Derpi {
   String viewUrl;
   String sourceUrl;
   DateTime updatedAt;
-  List<String> tags;
+  List<Tag> tags;
   int downvotes;
   int commentCount;
   Representations representations;
@@ -131,7 +131,7 @@ class Derpi {
     viewUrl: json["view_url"],
     sourceUrl: json["source_url"] == null ? null : json["source_url"],
     updatedAt: DateTime.parse(json["updated_at"]),
-    tags: List<String>.from(json["tags"].map((x) => x)),
+    tags: Tag.parse(List<String>.from(json["tags"])),
     downvotes: json["downvotes"],
     commentCount: json["comment_count"],
     representations: Representations.fromJson(json["representations"]),
@@ -233,7 +233,7 @@ class Intensities {
   };
 }
 
-enum MimeType { IMAGE_PNG, IMAGE_JPEG }
+enum MimeType { IMAGE_PNG, IMAGE_JPEG, VIDEO_WEBM, VIDEO_MP4 }
 
 final mimeTypeValues = EnumValues({
   "image/jpeg": MimeType.IMAGE_JPEG,
@@ -299,5 +299,34 @@ class EnumValues<T> {
       reverseMap = map.map((k, v) => new MapEntry(v, k));
     }
     return reverseMap;
+  }
+}
+
+enum TagType { ARTIST, SPOILER, OC }
+
+final tagTypeValues = new EnumValues({
+  "artist": TagType.ARTIST,
+  "spoiler": TagType.SPOILER,
+  "oc": TagType.OC
+});
+
+class Tag {
+  TagType type;
+  String label;
+
+  Tag(String tag) {
+    var splitTag = tag.split(':');
+    if (splitTag.length >= 2) {
+      this.type = tagTypeValues.map[splitTag[0]];
+      this.label = tag;
+    } else {
+      this.label = tag;
+    }
+  }
+
+  static List<Tag> parse(List<String> tags) {
+    List<Tag> outTags = new List<Tag>();
+    outTags = tags.map((x) => new Tag(x)).toList();
+    return outTags;
   }
 }
