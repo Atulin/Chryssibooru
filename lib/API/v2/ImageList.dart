@@ -1,10 +1,16 @@
+import 'dart:math';
+
 import 'package:chryssibooru/API/v2/API.dart';
 import 'package:chryssibooru/Connect.dart';
+import 'package:chryssibooru/Helpers.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
 
 
-Future<List<Derpi>> searchImages(String query, bool s, bool q, bool e, String key, [int page = 1, int limit = 30]) {
+Future<List<Derpi>> searchImages(String query, bool s, bool q, bool e, String key, {int page = 1, int limit = 30, ESortMethod sortMethod = ESortMethod.ID_DESC}) {
   const api_url = "https://derpibooru.org/api/v1/json/search/images?";
+
+  var sortData = sortDataFromEnum(sortMethod);
 
   var ratingsArr = [];
   if (s) ratingsArr.add("safe");
@@ -18,6 +24,10 @@ Future<List<Derpi>> searchImages(String query, bool s, bool q, bool e, String ke
                                 queryString += "&page="    + page.toString();
   if (key != "" || key != null) queryString += "&key="     + key;
   if (key == "" || key == null) queryString += "&per_page=" + limit.toString();
+  if (sortData.length > 0 && sortData[0].isNotEmpty)
+    queryString += "&sf=" + sortData[0];
+  if (sortData.length > 1 && sortData[1].isNotEmpty)
+    queryString += "&sd=" + sortData[1];
 
   var escapedQuery = queryString.replaceAll(" ", "+");
 
@@ -29,8 +39,9 @@ Future<List<Derpi>> searchImages(String query, bool s, bool q, bool e, String ke
 }
 
 Future<Derpi> getRandomImage(String query) {
-  String apiUrl = "https://derpibooru.org/search.json?q=";
+  var rnd = (new Random()).nextInt(10000).toString();
+  String apiUrl = "https://derpibooru.org/api/v1/json/search/images?q=";
   apiUrl += query.replaceAll(' ', '+');
-  apiUrl += '%2Cscore.gt:10&random_image=y';
+  apiUrl += ',score.gt:10&sf=random:'+rnd;
   return fetchSingleDerpi(apiUrl);
 }

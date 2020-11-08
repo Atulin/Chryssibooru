@@ -4,6 +4,8 @@
 
 import 'dart:convert';
 
+import 'package:chryssibooru/Helpers.dart';
+
 Derpibooru derpibooruFromJson(String str) {
   final jsonData = json.decode(str);
   return Derpibooru.fromJson(jsonData);
@@ -237,7 +239,9 @@ enum MimeType { IMAGE_PNG, IMAGE_JPEG, VIDEO_WEBM, VIDEO_MP4 }
 
 final mimeTypeValues = EnumValues({
   "image/jpeg": MimeType.IMAGE_JPEG,
-  "image/png": MimeType.IMAGE_PNG
+  "image/png":  MimeType.IMAGE_PNG,
+  "video/webm": MimeType.VIDEO_WEBM,
+  "video/mp4":  MimeType.VIDEO_MP4
 });
 
 class Representations {
@@ -260,6 +264,35 @@ class Representations {
     this.thumbSmall,
     this.thumbTiny,
   });
+
+  String fromEnum(ERepresentations representation) {
+    switch (representation) {
+      case ERepresentations.Full:
+        return this.full;
+        break;
+      case ERepresentations.Large:
+        return this.large;
+        break;
+      case ERepresentations.Medium:
+        return this.medium;
+        break;
+      case ERepresentations.Small:
+        return this.small;
+        break;
+      case ERepresentations.Thumb:
+        return this.thumb;
+        break;
+      case ERepresentations.ThumbSmall:
+        return this.thumbSmall;
+        break;
+      case ERepresentations.ThumbTiny:
+        return this.thumbTiny;
+        break;
+      default:
+        return this.thumbTiny;
+        break;
+    }
+  }
 
   factory Representations.fromRawJson(String str) => Representations.fromJson(json.decode(str));
 

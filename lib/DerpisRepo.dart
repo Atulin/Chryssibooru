@@ -1,5 +1,6 @@
 import 'package:chryssibooru/API/v2/API.dart';
 import 'package:chryssibooru/API/v2/ImageList.dart';
+import 'package:chryssibooru/Helpers.dart';
 import 'package:flutter/material.dart';
 
 class DerpisRepo extends ChangeNotifier {
@@ -14,11 +15,13 @@ class DerpisRepo extends ChangeNotifier {
 
   String query = "";
 
+  ESortMethod sortMethod = ESortMethod.ID_DESC;
+
   int page = 1;
 
   Future loadDerpis() async {
     loaded = false;
-    final newImages = await searchImages(query, safe, questionable, explicit, key, page);
+    final newImages = await searchImages(query, safe, questionable, explicit, key, page: page, sortMethod: sortMethod);
     if (newImages != null) {
       derpis.addAll(newImages);
       notifyListeners();

@@ -5,7 +5,8 @@ class FilterSheet extends StatefulWidget {
   FilterSheet({
     @required this.safe, @required this.questionable, @required this.explicit,
     @required this.safeChanged, @required this.questionableChanged, @required this.explicitChanged,
-    @required this.quality, @required this.qualityChanged
+    @required this.quality, @required this.qualityChanged,
+    @required this.sortMethod, @required this.sortMethodChanged
   });
 
   final bool safe;
@@ -19,6 +20,9 @@ class FilterSheet extends StatefulWidget {
   final Quality quality;
   final ValueChanged<Quality> qualityChanged;
 
+  final ESortMethod sortMethod;
+  final ValueChanged<ESortMethod> sortMethodChanged;
+
   @override
   _FilterSheet createState() => _FilterSheet();
 }
@@ -29,6 +33,7 @@ class _FilterSheet extends State<FilterSheet> {
   bool _explicit;
 
   Quality _quality;
+  ESortMethod _sortMethod;
 
   @override
   void initState() {
@@ -36,6 +41,7 @@ class _FilterSheet extends State<FilterSheet> {
     _questionable = widget.questionable;
     _explicit = widget.explicit;
     _quality = widget.quality;
+    _sortMethod = widget.sortMethod;
     super.initState();
   }
 
@@ -80,10 +86,12 @@ class _FilterSheet extends State<FilterSheet> {
         Row(
           mainAxisAlignment: MainAxisAlignment.start,
           children: <Widget>[
+
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 8, 8, 8),
               child: Text('Image quality:'),
             ),
+
             new DropdownButton<Quality>(
               value: _quality,
                 items: Quality.values.map((Quality q) {
@@ -96,6 +104,32 @@ class _FilterSheet extends State<FilterSheet> {
                   setState(() {
                     _quality = q;
                     widget.qualityChanged(q);
+                  });
+                }
+            ),
+          ],
+        ),
+        Row(
+            mainAxisAlignment: MainAxisAlignment.start,
+            children: <Widget>[
+
+            Padding(
+            padding: const EdgeInsets.fromLTRB(16, 8, 8, 8),
+            child: Text('Sort by:'),
+            ),
+
+            new DropdownButton<ESortMethod>(
+                value: _sortMethod,
+                items: ESortMethod.values.map((ESortMethod s) {
+                  return DropdownMenuItem<ESortMethod> (
+                    value: s,
+                    child: Text(s.toString().split('.')[1]),
+                  );
+                }).toList(),
+                onChanged: (ESortMethod s) {
+                  setState(() {
+                    _sortMethod = s;
+                    widget.sortMethodChanged(s);
                   });
                 }
             ),

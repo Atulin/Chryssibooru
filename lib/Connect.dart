@@ -22,10 +22,5 @@ Future<List<Derpi>> fetchDerpi(String url) async {
 Future<Derpi> fetchSingleDerpi(String url) async {
   final response = await http.get(url);
   var idObject = jsonDecode(response.body);
-  String imageUrl = "https://derpibooru.org/"+idObject['id']+".json";
-  final imageJson = await http.get(imageUrl);
-  var imageObject = jsonDecode(imageJson.body);
-
-
-  return Derpi.fromJson(imageObject);
+  return Derpi.fromJson(idObject['images'][0]);
 }

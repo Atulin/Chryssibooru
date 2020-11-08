@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:chryssibooru/DerpisRepo.dart';
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -44,6 +46,75 @@ enum Quality {
   Source
 }
 
+enum ESortMethod {
+  SCORE_ASC,
+  SCORE_DESC,
+  ID_ASC,
+  ID_DESC,
+  FAVES_ASC,
+  FAVES_DESC,
+  UPVOTES_ASC,
+  UPVOTES_DESC,
+  RANDOM
+}
+
+List<String> sortDataFromEnum(ESortMethod method) {
+  switch (method) {
+    case ESortMethod.SCORE_ASC:
+      return ["score", "asc"];
+      break;
+    case ESortMethod.SCORE_DESC:
+      return ["score", "desc"];
+      break;
+    case ESortMethod.ID_ASC:
+      return ["id", "asc"];
+      break;
+    case ESortMethod.ID_DESC:
+      return ["id", "desc"];
+      break;
+    case ESortMethod.FAVES_ASC:
+      return ["faves", "asc"];
+      break;
+    case ESortMethod.FAVES_DESC:
+      return ["faves", "desc"];
+      break;
+    case ESortMethod.UPVOTES_ASC:
+      return ["upvotes", "asc"];
+      break;
+    case ESortMethod.UPVOTES_DESC:
+      return ["upvotes", "desc"];
+      break;
+    case ESortMethod.RANDOM:
+      var rnd = (new Random()).nextInt(10000).toString();
+      return ["random:"+rnd, "desc"];
+      break;
+    default:
+      return [];
+      break;
+  }
+}
+
+enum ERepresentations {
+  Full,
+  Large,
+  Medium,
+  Small,
+  Thumb,
+  ThumbSmall,
+  ThumbTiny
+}
+
+ERepresentations representationFromWidth(int width) {
+  if (width <= 50)   return ERepresentations.ThumbTiny;
+  if (width <= 150)  return ERepresentations.ThumbSmall;
+  if (width <= 250)  return ERepresentations.Thumb;
+  if (width <= 320)  return ERepresentations.Small;
+  if (width <= 800)  return ERepresentations.Medium;
+  if (width <= 1280) return ERepresentations.Large;
+  return ERepresentations.Full;
+}
+
+
 String getImageOfQuality(Quality quality, DerpisRepo repo, int index) {
   switch (quality) {
     case Quality.Low:
@@ -58,66 +129,4 @@ String getImageOfQuality(Quality quality, DerpisRepo repo, int index) {
     default:
       return repo.derpis[index].representations.medium;
   }
-}
-
-class Semver {
-  int major;
-  int minor;
-  int hotfix;
-
-  Semver(this.major, this.minor, this.hotfix);
-
-  Semver.fromString(String version) {
-    var parts = version.split('.');
-    List<int> iParts = List<int>();
-
-    if (parts.length > 3) throw ArgumentError('Incorrect semver format');
-
-    for (var p in parts) {
-      int i = int.parse(p);
-      if (i == null) throw ArgumentError('Incorrect semver format');
-      else iParts.add(i);
-    }
-
-    this.major = iParts[0];
-    this.minor = iParts[1];
-    this.hotfix = iParts[2];
-  }
-
-  @override
-  String toString() => '$major.$minor.$hotfix';
-
-  bool operator < (Semver other) {
-    if (this.major < other.major) return true;
-    if (this.minor < other.minor) return true;
-    if (this.hotfix < other.hotfix) return true;
-    else return false;
-  }
-
-  bool operator > (Semver other) {
-    if (this.major > other.major) return true;
-    if (this.minor > other.minor) return true;
-    if (this.hotfix > other.hotfix) return true;
-    else return false;
-  }
-
-  bool operator <= (Semver other)  => (this < other) || (this == other);
-
-  bool operator >= (Semver other) => (this > other) || (this == other);
-
-  @override
-  bool operator == (Object other) =>
-      identical(this, other) ||
-          other is Semver &&
-              runtimeType == other.runtimeType &&
-              major == other.major &&
-              minor == other.minor &&
-              hotfix == other.hotfix;
-
-  @override
-  int get hashCode =>
-      major.hashCode ^
-      minor.hashCode ^
-      hotfix.hashCode;
-
 }

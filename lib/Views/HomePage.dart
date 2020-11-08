@@ -3,7 +3,7 @@ import 'package:chryssibooru/DerpisRepo.dart';
 import 'package:chryssibooru/Elements/FavouritesModal.dart';
 import 'package:chryssibooru/Elements/FilterSheet.dart';
 import 'package:chryssibooru/Elements/HistoryModal.dart';
-import 'package:chryssibooru/API/v1/ImageList.dart';
+import 'package:chryssibooru/API/v2/ImageList.dart';
 import 'package:chryssibooru/Views/ImageViewer.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_advanced_networkimage/provider.dart';
@@ -44,6 +44,7 @@ class HomePageState extends State<HomePage> {
   bool _e = false;
 
   Quality _quality;
+  ESortMethod _sortMethod;
 
   String _headerImage;
 
@@ -110,6 +111,18 @@ class HomePageState extends State<HomePage> {
     prefs.setInt('quality', _quality.index);
   }
 
+  // void _getSortMethodPrefs() async {
+  //   SharedPreferences prefs = await SharedPreferences.getInstance();
+  //   setState(() {
+  //     _sortMethod = ESortMethod.values[prefs.getInt('sortMethod') ?? ESortMethod.ID_DESC.index];
+  //   });
+  // }
+  //
+  // void _saveSortMethodPrefs() async {
+  //   SharedPreferences prefs = await SharedPreferences.getInstance();
+  //   prefs.setInt('sortMethod', _sortMethod.index);
+  // }
+
   void _getRatingPrefs() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     setState(() {
@@ -153,8 +166,12 @@ class HomePageState extends State<HomePage> {
     prefs.setStringList("history", history);
   }
 
+  bool _isHeaderLoading = false;
   void _setHeaderImage() async {
-    var derp = await getRandomImage('chrysalis, solo, transparent background, -webm');
+    setState(() {
+      _isHeaderLoading = true;
+    });
+    Derpi derp = await getRandomImage('chrysalis,solo,transparent background,-webm');
     setState(() {
       _headerImage = derp.representations.medium;
     });
@@ -194,19 +211,19 @@ class HomePageState extends State<HomePage> {
                             child: Padding(
                               padding: EdgeInsets.all(0.2),
                               child: ClipRRect(
-                                borderRadius:new BorderRadius.all(Radius.circular(10.0)),
+                                borderRadius: new BorderRadius.all(Radius.circular(10.0)),
                                 child: (){
-                                  String url = repo.derpis[index].representations.thumb;
-                                  if(repo.derpis[index].mimeType == MimeType.VIDEO_WEBM){
+                                  String url = repo.derpis[index].representations.fromEnum(ERepresentations.Thumb);
+                                  if (repo.derpis[index].mimeType == MimeType.VIDEO_WEBM){
                                     List<String> parts = url.split('.');
                                     parts[parts.length-1] = 'gif';
                                     url = parts.join('.');
                                   }
-                                  return new TransitionToImage(
+                                  return TransitionToImage(
                                     image: AdvancedNetworkImage(
-                                        url,
-                                        useDiskCache: true,
-                                        cacheRule: CacheRule(maxAge: const Duration(days: 7))
+                                      url,
+                                      useDiskCache: true,
+                                      cacheRule: CacheRule(maxAge: const Duration(days: 7))
                                     ),
                                     placeholder: SvgPicture.asset('assets/logo.svg'),
                                     loadingWidgetBuilder: (BuildContext ctx, double progress, _) => Padding(
@@ -266,6 +283,7 @@ class HomePageState extends State<HomePage> {
                       repo.derpis = new List<Derpi>();
                       repo.page = 1;
                       repo.query = text;
+                      repo.sortMethod = _sortMethod;
                       repo.setRatings(_s, _q, _e);
                       _saveSearch(text);
                       setState(() {
@@ -302,6 +320,12 @@ class HomePageState extends State<HomePage> {
                           _quality = q;
                           _saveQualityPrefs();
                         },
+                        sortMethod: _sortMethod,
+                        sortMethodChanged: (ESortMethod s) {
+                          setState(() {
+                            _sortMethod = s;
+                          });
+                        },
                       );
                     },
                   );
@@ -323,28 +347,50 @@ class HomePageState extends State<HomePage> {
                       if (_headerImage != null) {
                         return new TransitionToImage(
                           image: AdvancedNetworkImage(
-                            'https:'+_headerImage,
+                            _headerImage,
                             useDiskCache: true,
                             cacheRule: CacheRule(maxAge: const Duration(days: 7)),
                           ),
                           placeholder: SvgPicture.asset('assets/logo.svg'),
                           fit: BoxFit.cover,
+                          loadedCallback: () {
+                            setState(() {
+                              _isHeaderLoading = false;
+                            });
+                          },
                         );
                       } else {
                         return SvgPicture.asset('assets/logo.svg');
                       }
                     }(),
                     Positioned(
-                      child: IconButton(
-                        icon: Icon(Icons.refresh),
-                        onPressed: () => _setHeaderImage(),
-                        splashColor: Colors.transparent,
-                        color: Color.fromARGB(50, 255, 255, 255),
-                        iconSize: 20,
+                      child: GestureDetector(
+                        child: Icon(
+                          Icons.shuffle,
+                          color: Color.fromARGB(50, 255, 255, 255),
+                          size: 20,
+                        ),
+                        onTap: () => _setHeaderImage(),
+                        onLongPress: () {
+                          setState(() {
+                            _headerImage = null;
+                          });
+                        },
                       ),
                       right: 0.0,
                       bottom: 0.0,
-                    )
+                    ),
+                    (){
+                      if (_isHeaderLoading) {
+                        return Positioned(
+                          child: Text("Loading...", style: TextStyle(color: Color.fromARGB(50, 255, 255, 255)),),
+                          left: 0.0,
+                          bottom: 0.0,
+                        );
+                      } else {
+                        return SizedBox.shrink();
+                      }
+                    }()
                   ],
                 ),
               decoration: BoxDecoration(
