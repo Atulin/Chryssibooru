@@ -29,6 +29,9 @@ class DerpisRepo extends ChangeNotifier {
     loaded = true;
   }
 
+  String getQuery() => buildQuery(query, safe, questionable, explicit, key, page: page, sortMethod: sortMethod);
+
+
   void setRatings(bool safe, bool questionable, bool explicit) {
     this.safe = safe;
     this.questionable = questionable;

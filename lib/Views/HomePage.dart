@@ -9,6 +9,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_advanced_networkimage/provider.dart';
 import 'package:flutter_advanced_networkimage/transition.dart';
 import 'package:get_version/get_version.dart';
+import 'package:logger_flutter/logger_flutter.dart';
 import 'package:provider/provider.dart' as p;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter_svg/svg.dart';
@@ -50,6 +51,9 @@ class HomePageState extends State<HomePage> {
 
   String currentVersion;
   ReleaseData newRelease;
+
+  String _query;
+  var searchControl = TextEditingController();
 
   int cacheSize = 0;
   void getCacheSize() async {
@@ -166,6 +170,8 @@ class HomePageState extends State<HomePage> {
     prefs.setStringList("history", history);
   }
 
+  updateSearch(value) => setState(() => searchControl.text = value);
+
   bool _isHeaderLoading = false;
   void _setHeaderImage() async {
     setState(() {
@@ -274,12 +280,12 @@ class HomePageState extends State<HomePage> {
               ),
               Expanded(
                 child: TextField(
-
+                  controller: searchControl,
                   decoration: InputDecoration(
                       border: InputBorder.none,
                       hintText: 'Please enter a search term'),
                   onSubmitted: (text) {
-                    if (text != repo.query || _s != repo.safe || _q != repo.questionable || _e != repo.explicit) {
+                    if (text != repo.query || _s != repo.safe || _q != repo.questionable || _e != repo.explicit || _sortMethod != repo.sortMethod) {
                       repo.derpis = new List<Derpi>();
                       repo.page = 1;
                       repo.query = text;
@@ -288,6 +294,7 @@ class HomePageState extends State<HomePage> {
                       _saveSearch(text);
                       setState(() {
                         repo.loadDerpis();
+                        _query = repo.getQuery();
                       });
                     }
                   },
@@ -422,6 +429,7 @@ class HomePageState extends State<HomePage> {
                 builder: (BuildContext context) {
                   return new HistoryModal(
                     repo: repo,
+                    callback: updateSearch,
                   );
                 }
               ),
@@ -435,6 +443,7 @@ class HomePageState extends State<HomePage> {
                   builder: (BuildContext context) {
                     return new FavouritesModal(
                       repo: repo,
+                      callback: updateSearch,
                     );
                   }
               ),
@@ -454,6 +463,19 @@ class HomePageState extends State<HomePage> {
                 RaisedButton(
                   child: Text("Github repo"),
                   onPressed: () => openInBrowser("https://github.com/Atulin/Chryssibooru"),
+                ),
+                RaisedButton(
+                  child: Text("Debug info"),
+                  onPressed: () => showModalBottomSheet(
+                      context: _scaffoldKey.currentContext,
+                      builder: (BuildContext context) {
+                        return FlatButton(
+                          child: Text(_query ?? "No recent queries"),
+                          onPressed: () => { if(_query != null) openInBrowser(_query) },
+                          onLongPress: () => LogConsole.open(context),
+                        );
+                      }
+                  )
                 ),
               ],
             )

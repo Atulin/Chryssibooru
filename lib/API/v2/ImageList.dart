@@ -6,8 +6,7 @@ import 'package:chryssibooru/Helpers.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
-
-Future<List<Derpi>> searchImages(String query, bool s, bool q, bool e, String key, {int page = 1, int limit = 30, ESortMethod sortMethod = ESortMethod.ID_DESC}) {
+String buildQuery(String query, bool s, bool q, bool e, String key, {int page = 1, int limit = 30, ESortMethod sortMethod = ESortMethod.ID_DESC}) {
   const api_url = "https://derpibooru.org/api/v1/json/search/images?";
 
   var sortData = sortDataFromEnum(sortMethod);
@@ -21,7 +20,7 @@ Future<List<Derpi>> searchImages(String query, bool s, bool q, bool e, String ke
   var queryString = api_url + "q=" + query;
 
   if ( !( (s&&q&&e) || (!s&&!q&&!e) ) ) queryString += "%2C (" + ratings + ")";
-                                queryString += "&page="    + page.toString();
+  queryString += "&page="    + page.toString();
   if (key != "" || key != null) queryString += "&key="     + key;
   if (key == "" || key == null) queryString += "&per_page=" + limit.toString();
   if (sortData.length > 0 && sortData[0].isNotEmpty)
@@ -29,12 +28,17 @@ Future<List<Derpi>> searchImages(String query, bool s, bool q, bool e, String ke
   if (sortData.length > 1 && sortData[1].isNotEmpty)
     queryString += "&sd=" + sortData[1];
 
-  var escapedQuery = queryString.replaceAll(" ", "+");
+  var escapedQuery = queryString
+      .replaceAll(", ", ",")
+      .replaceAll(" ", "+");
 
-  var derpis = fetchDerpi(escapedQuery);
+  return escapedQuery;
+}
 
-  debugPrint(derpis != null ? escapedQuery : 'End of results');
-
+Future<List<Derpi>> searchImages(String query, bool s, bool q, bool e, String key, {int page = 1, int limit = 30, ESortMethod sortMethod = ESortMethod.ID_DESC}) {
+  var queryStr = buildQuery(query, s, q, e, key, page: page, limit: limit, sortMethod: sortMethod);
+  var derpis = fetchDerpi(queryStr);
+  debugPrint(derpis != null ? queryStr : 'End of results');
   return derpis;
 }
 

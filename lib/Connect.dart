@@ -2,9 +2,11 @@ import 'dart:convert';
 
 import 'package:chryssibooru/API/v2/API.dart';
 import 'package:http/http.dart' as http;
+import 'package:logger/logger.dart';
 
 Future<List<Derpi>> fetchDerpi(String url) async {
   final response = await http.get(url);
+  var logger = Logger();
 
   if (response.statusCode == 200) {
     Iterable i = json.decode(response.body)['images'];
@@ -12,10 +14,15 @@ Future<List<Derpi>> fetchDerpi(String url) async {
       List<Derpi> derpis = i.map((dynamic) => Derpi.fromJson(dynamic)).toList();
       return derpis;
     } else {
+      logger.i("No images found");
       return null;
     }
   } else {
-    throw Exception('Failed to load posts');
+    logger.e({
+      'code': response.statusCode,
+      'body': response.body
+    });
+    return null;
   }
 }
 

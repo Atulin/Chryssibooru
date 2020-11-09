@@ -30,10 +30,15 @@ Derpibooru client made with Flutter
 | -------------- | --------------- | ------------- | ---------- |
 | ![Main grid view](screenshots/gridview.jpg) | ![Full image view](screenshots/fullview.jpg) | ![Image details](screenshots/details.jpg) | ![App drawer](screenshots/drawer.jpg) |
 
-## Changelog*
+## Changelog
+
+* **09.11.2020**
+  * Fixed history and faves not updating the search query
+  * Fixed changing sorting method not refreshing the search
+  * Added some simple debug info
 
 * **08.11.2020**
-  * Fixed videos not working …
+  * Fixed videos not working
   * Added comment count, fave count, upvotes, downvotes, and overall score to the details panel
   * Details panel now opens by tapping the up arrow instead of swiping, to not conflict with gestures
   * Removed the V1 API files

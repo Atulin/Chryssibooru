@@ -4,9 +4,10 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class FavouritesModal extends StatefulWidget {
-  FavouritesModal({@required this.repo});
+  FavouritesModal({@required this.repo, @required this.callback});
 
   final DerpisRepo repo;
+  final Function callback;
 
   @override
   _FavouritesModal createState() => _FavouritesModal();
@@ -54,35 +55,39 @@ class _FavouritesModal extends State<FavouritesModal> {
             border:
                 new Border(bottom: BorderSide(width: 1.0, color: Colors.grey))),
       ),
-      content: new ListView.builder(
-          padding: EdgeInsets.only(top: 5.0),
-          itemCount: _favourites != null ? _favourites.length : 0,
-          itemBuilder: (BuildContext context, int index) {
-            return new Dismissible(
-                key: Key(_favourites[index]),
-                background: Container(
-                  color: _dismissColor,
-                ),
-                onDismissed: (direction) {
-                  _removeSearchFromFavourites(index);
-                },
-                child: InkWell(
-                  child: Padding(
-                    padding: const EdgeInsets.only(left: 20.0, right: 20.0, top: 10.0, bottom: 10.0),
-                    child: Text(_favourites[index]),
+      content: Container(
+        width: double.maxFinite,
+        child: new ListView.builder(
+            padding: EdgeInsets.only(top: 5.0),
+            itemCount: _favourites != null ? _favourites.length : 0,
+            itemBuilder: (BuildContext context, int index) {
+              return new Dismissible(
+                  key: Key(_favourites[index]),
+                  background: Container(
+                    color: _dismissColor,
                   ),
-                  onTap: () {
-                    if (_favourites[index] != _repo.query) {
-                      _repo.derpis = new List<Derpi>();
-                      _repo.page = 1;
-                      _repo.query = _favourites[index];
-                      setState(() {
-                        _repo.loadDerpis();
-                      });
-                    }
+                  onDismissed: (direction) {
+                    _removeSearchFromFavourites(index);
                   },
-                ));
-          }),
+                  child: InkWell(
+                    child: Padding(
+                      padding: const EdgeInsets.only(left: 20.0, right: 20.0, top: 10.0, bottom: 10.0),
+                      child: Text(_favourites[index]),
+                    ),
+                    onTap: () {
+                      if (_favourites[index] != _repo.query) {
+                        _repo.derpis = new List<Derpi>();
+                        _repo.page = 1;
+                        _repo.query = _favourites[index];
+                        setState(() {
+                          widget.callback(_favourites[index]);
+                          _repo.loadDerpis();
+                        });
+                      }
+                    },
+                  ));
+            }),
+      ),
       actions: <Widget>[
         // usually buttons at the bottom of the dialog
         new FlatButton(
