@@ -3,8 +3,6 @@ import 'dart:convert';
 import 'package:get_version/get_version.dart';
 import 'package:http/http.dart' as http;
 
-import 'Helpers.dart';
-
 Future<ReleaseData> checkForUpdates() async {
   var newest = await getNewestReleaseData();
   var current = await GetVersion.projectVersion;

@@ -14,6 +14,9 @@ import 'package:provider/provider.dart' as p;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:chryssibooru/Enums/ESortMethod.dart';
+import 'package:chryssibooru/Enums/ERepresentations.dart';
+import 'package:chryssibooru/Enums/EQuality.dart';
 
 import '../Helpers.dart';
 import '../Updates.dart';
@@ -80,6 +83,7 @@ class HomePageState extends State<HomePage> {
     _getCurrentVersion();
     _getRatingPrefs();
     _getQualityPrefs();
+    _getSortMethodPrefs();
     _scrollController = ScrollController();
     _scrollController.addListener(_loadDerpisListener);
     super.initState();
@@ -115,17 +119,17 @@ class HomePageState extends State<HomePage> {
     prefs.setInt('quality', _quality.index);
   }
 
-  // void _getSortMethodPrefs() async {
-  //   SharedPreferences prefs = await SharedPreferences.getInstance();
-  //   setState(() {
-  //     _sortMethod = ESortMethod.values[prefs.getInt('sortMethod') ?? ESortMethod.ID_DESC.index];
-  //   });
-  // }
-  //
-  // void _saveSortMethodPrefs() async {
-  //   SharedPreferences prefs = await SharedPreferences.getInstance();
-  //   prefs.setInt('sortMethod', _sortMethod.index);
-  // }
+  void _getSortMethodPrefs() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    setState(() {
+      _sortMethod = ESortMethod.values[prefs.getInt('sortMethod') ?? ESortMethod.ID_DESC.index];
+    });
+  }
+
+  void _saveSortMethodPrefs() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    prefs.setInt('sortMethod', _sortMethod.index);
+  }
 
   void _getRatingPrefs() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
@@ -331,6 +335,7 @@ class HomePageState extends State<HomePage> {
                         sortMethodChanged: (ESortMethod s) {
                           setState(() {
                             _sortMethod = s;
+                            _saveSortMethodPrefs();
                           });
                         },
                       );
@@ -450,7 +455,7 @@ class HomePageState extends State<HomePage> {
             ),
             Divider(),
             ListTile(
-              title: Text("Buy me a coffe"),
+              title: Text("Buy me a coffee"),
               subtitle: Text("Or two, I don't judge", style: TextStyle(fontSize: 12.0)),
               leading: Icon(Icons.free_breakfast),
               onTap: () => openInBrowser("https://ko-fi.com/angius"),

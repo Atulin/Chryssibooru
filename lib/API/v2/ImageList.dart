@@ -2,14 +2,14 @@ import 'dart:math';
 
 import 'package:chryssibooru/API/v2/API.dart';
 import 'package:chryssibooru/Connect.dart';
-import 'package:chryssibooru/Helpers.dart';
+import 'package:chryssibooru/Enums/ESortMethod.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
 String buildQuery(String query, bool s, bool q, bool e, String key, {int page = 1, int limit = 30, ESortMethod sortMethod = ESortMethod.ID_DESC}) {
   const api_url = "https://derpibooru.org/api/v1/json/search/images?";
 
-  var sortData = sortDataFromEnum(sortMethod);
+  var sortData = sortMethod.sortData();
 
   var ratingsArr = [];
   if (s) ratingsArr.add("safe");

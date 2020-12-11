@@ -3,8 +3,7 @@
 //     final derpibooru = derpibooruFromJson(jsonString);
 
 import 'dart:convert';
-
-import 'package:chryssibooru/Helpers.dart';
+import 'package:chryssibooru/Enums/ERepresentations.dart';
 
 Derpibooru derpibooruFromJson(String str) {
   final jsonData = json.decode(str);

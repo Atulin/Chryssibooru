@@ -1,5 +1,6 @@
-import 'package:chryssibooru/Helpers.dart';
+import 'package:chryssibooru/Enums/EQuality.dart';
 import 'package:flutter/material.dart';
+import 'package:chryssibooru/Enums/ESortMethod.dart';
 
 class FilterSheet extends StatefulWidget {
   FilterSheet({
@@ -114,8 +115,8 @@ class _FilterSheet extends State<FilterSheet> {
             children: <Widget>[
 
             Padding(
-            padding: const EdgeInsets.fromLTRB(16, 8, 8, 8),
-            child: Text('Sort by:'),
+              padding: const EdgeInsets.fromLTRB(16, 8, 8, 8),
+              child: Text('Sort by:'),
             ),
 
             new DropdownButton<ESortMethod>(
@@ -123,7 +124,7 @@ class _FilterSheet extends State<FilterSheet> {
                 items: ESortMethod.values.map((ESortMethod s) {
                   return DropdownMenuItem<ESortMethod> (
                     value: s,
-                    child: Text(s.toString().split('.')[1]),
+                    child: Text(s.name()),
                   );
                 }).toList(),
                 onChanged: (ESortMethod s) {

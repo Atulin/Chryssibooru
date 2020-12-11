@@ -7,12 +7,10 @@ import 'package:chryssibooru/DerpisRepo.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_advanced_networkimage/zoomable.dart';
 import 'package:provider/provider.dart' as p;
-import 'package:share/share.dart';
+import 'package:chryssibooru/Enums/EQuality.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:video_player/video_player.dart';
 import 'package:percent_indicator/linear_percent_indicator.dart';
-
-import '../Helpers.dart';
 
 class ImageViewer extends StatefulWidget {
   ImageViewer({Key key, this.title, @required this.index}) : super(key: key);
@@ -166,7 +164,7 @@ class ImageViewerState extends State<ImageViewer> {
                     child: Container(
                       child: TransitionToImage(
                         image: AdvancedNetworkImage(
-                            getImageOfQuality(_quality, repo, index),
+                            repo.getImageOfQuality(_quality, index),
                             useDiskCache: true,
                             cacheRule: CacheRule(maxAge: const Duration(days: 7))
                         ),
