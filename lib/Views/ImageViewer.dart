@@ -1,3 +1,4 @@
+import 'package:chryssibooru/Elements/CustomVideoPlayer.dart';
 import 'package:chryssibooru/Elements/DetailsSheet.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_advanced_networkimage/provider.dart';
@@ -95,7 +96,9 @@ class ImageViewerState extends State<ImageViewer> {
     // Swap the video
     if (_pageController.page.round() != _currentPage) {
       if (repo.derpis[_pageController.page.round()].mimeType == MimeType.VIDEO_WEBM) {
+        _videoController?.pause();
         _videoController?.dispose();
+
         _videoController = VideoPlayerController.network(repo.derpis[_pageController.page.round()].representations.medium)
         ..addListener(() {
           setState(() {
@@ -108,14 +111,13 @@ class ImageViewerState extends State<ImageViewer> {
           if (_autoplay) _videoController.play();
           setState(() {});
         });
+
       }
       _currentPage = _pageController.page.round();
     }
 
     // Load new elements
-    if (repo.derpis.length - _pageController.page <= 3.0 &&
-        !_pageController.position.outOfRange &&
-        repo.loaded) {
+    if (repo.derpis.length - _pageController.page <= 3.0 && !_pageController.position.outOfRange && repo.loaded) {
       repo.page++;
       setState(() {
         repo.loadDerpis();
@@ -149,6 +151,7 @@ class ImageViewerState extends State<ImageViewer> {
             controller: _pageController,
             itemCount: repo.derpis.length,
             physics: _isPageViewDisabled ? NeverScrollableScrollPhysics() : BouncingScrollPhysics(),
+            pageSnapping: true,
             itemBuilder: (BuildContext context, int index) {
               return Center(child: () {
                 if (repo.derpis[index].mimeType != MimeType.VIDEO_WEBM) {
@@ -182,22 +185,22 @@ class ImageViewerState extends State<ImageViewer> {
                     children: <Widget>[
                       Align(
                         alignment: Alignment.center,
-                        child: GestureDetector(
-                          child: _videoController.value.initialized
+                        // child: GestureDetector(
+                          child: _videoController.value.isInitialized
                               ? AspectRatio(
                                   aspectRatio: _videoController.value.aspectRatio,
                                   child: VideoPlayer(_videoController),
                                 )
                               : CircularProgressIndicator(),
-                          onTap: () {
-                            setState(() {
-                              _videoController.value.isPlaying
-                                  ? _videoController.pause()
-                                  : _videoController.play();
-                              _autoplay = _autoplay ? false : true;
-                            });
-                          },
-                        ),
+                          // onTap: () {
+                          //   setState(() {
+                          //     _videoController.value.isPlaying
+                          //         ? _videoController.pause()
+                          //         : _videoController.play();
+                          //     _autoplay = _autoplay ? false : true;
+                          //   });
+                          // },
+                        // ),
                       ),
                       Align(
                         alignment: Alignment.bottomLeft,

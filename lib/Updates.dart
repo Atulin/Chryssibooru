@@ -1,11 +1,12 @@
 import 'dart:convert';
 
-import 'package:get_version/get_version.dart';
 import 'package:http/http.dart' as http;
+import 'package:package_info/package_info.dart';
 
 Future<ReleaseData> checkForUpdates() async {
   var newest = await getNewestReleaseData();
-  var current = await GetVersion.projectVersion;
+  PackageInfo packageInfo = await PackageInfo.fromPlatform();
+  var current = packageInfo.version;
 
   if (newest.version.toString() != current) {
     return newest;
@@ -15,7 +16,7 @@ Future<ReleaseData> checkForUpdates() async {
 }
 
 Future<ReleaseData> getNewestReleaseData() async {
-  var json = await http.get('https://api.github.com/repos/Atulin/Chryssibooru/releases/latest');
+  var json = await http.get(Uri(path: 'https://api.github.com/repos/Atulin/Chryssibooru/releases/latest'));
   var data = jsonDecode(json.body);
   return new ReleaseData(
       data['name'],

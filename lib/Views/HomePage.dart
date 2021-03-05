@@ -8,8 +8,7 @@ import 'package:chryssibooru/Views/ImageViewer.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_advanced_networkimage/provider.dart';
 import 'package:flutter_advanced_networkimage/transition.dart';
-import 'package:get_version/get_version.dart';
-import 'package:logger_flutter/logger_flutter.dart';
+import 'package:package_info/package_info.dart';
 import 'package:provider/provider.dart' as p;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter_svg/svg.dart';
@@ -101,7 +100,8 @@ class HomePageState extends State<HomePage> {
   }
 
   void _getCurrentVersion() async {
-    var current = await GetVersion.projectVersion;
+    PackageInfo packageInfo = await PackageInfo.fromPlatform();
+    var current = packageInfo.version;
     setState(() {
       currentVersion = current;
     });
@@ -164,7 +164,7 @@ class HomePageState extends State<HomePage> {
 
   void _saveSearch(String search) async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
-    List<String> history = prefs.getStringList("history") ?? new List<String>();
+    List<String> history = prefs.getStringList("history") ?? [];
 
     if (history != null && history.indexOf(search) < 0) {
       if (history.length >= 50) history.removeAt(0);
@@ -290,7 +290,7 @@ class HomePageState extends State<HomePage> {
                       hintText: 'Please enter a search term'),
                   onSubmitted: (text) {
                     if (text != repo.query || _s != repo.safe || _q != repo.questionable || _e != repo.explicit || _sortMethod != repo.sortMethod) {
-                      repo.derpis = new List<Derpi>();
+                      repo.derpis = [];
                       repo.page = 1;
                       repo.query = text;
                       repo.sortMethod = _sortMethod;
@@ -465,20 +465,16 @@ class HomePageState extends State<HomePage> {
               icon: Icon(Icons.info_outline),
               applicationVersion: currentVersion,
               aboutBoxChildren: <Widget>[
-                RaisedButton(
+                ElevatedButton(
                   child: Text("Github repo"),
                   onPressed: () => openInBrowser("https://github.com/Atulin/Chryssibooru"),
                 ),
-                RaisedButton(
+                ElevatedButton(
                   child: Text("Debug info"),
                   onPressed: () => showModalBottomSheet(
                       context: _scaffoldKey.currentContext,
                       builder: (BuildContext context) {
-                        return FlatButton(
-                          child: Text(_query ?? "No recent queries"),
-                          onPressed: () => { if(_query != null) openInBrowser(_query) },
-                          onLongPress: () => LogConsole.open(context),
-                        );
+                        return Text(_query ?? "No recent queries");
                       }
                   )
                 ),
