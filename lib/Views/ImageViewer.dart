@@ -1,4 +1,3 @@
-import 'package:chryssibooru/Elements/CustomVideoPlayer.dart';
 import 'package:chryssibooru/Elements/DetailsSheet.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_advanced_networkimage/provider.dart';
@@ -35,7 +34,7 @@ class ImageViewerState extends State<ImageViewer> {
   double _volume = 0.0;
   bool _autoplay = false;
 
-  List<Derpi> derpis = new List<Derpi>();
+  List<Derpi> derpis = [];
   int _id = 0;
 
   int descMaxLines = 3;
@@ -50,10 +49,10 @@ class ImageViewerState extends State<ImageViewer> {
   // Preferred image quality
   Quality _quality;
 
-
   @override
   void dispose() {
     _videoController.dispose();
+    _pageController.dispose();
     super.dispose();
   }
 
@@ -63,18 +62,18 @@ class ImageViewerState extends State<ImageViewer> {
 
     _videoController?.dispose();
     _videoController = VideoPlayerController.network(repo.derpis[_id].representations.medium)
-    ..addListener(() {
-      setState(() {
-        if (_videoController.value.duration != null)
-          _videoProgressPercent = (_videoController.value.position.inMilliseconds / _videoController.value.duration.inMilliseconds).clamp(0.0, 1.0);
+      ..addListener(() {
+        setState(() {
+          if (_videoController.value.duration != null)
+            _videoProgressPercent = (_videoController.value.position.inMilliseconds / _videoController.value.duration.inMilliseconds).clamp(0.0, 1.0);
+        });
+      })
+      ..initialize().then((_) {
+        _videoController.setVolume(_volume);
+        _videoController.setLooping(true);
+        if (_autoplay) _videoController.play();
+        setState(() {});
       });
-    })
-    ..initialize().then((_) {
-      _videoController.setVolume(_volume);
-      _videoController.setLooping(true);
-      if (_autoplay) _videoController.play();
-      setState(() {});
-    });
 
     super.didChangeDependencies();
   }
@@ -95,25 +94,26 @@ class ImageViewerState extends State<ImageViewer> {
   void _loadDerpisListener() {
     // Swap the video
     if (_pageController.page.round() != _currentPage) {
-      if (repo.derpis[_pageController.page.round()].mimeType == MimeType.VIDEO_WEBM) {
+      setState(() {
+        _currentPage = _pageController.page.round();
+      });
+
+      if (repo.derpis[_currentPage].mimeType == MimeType.VIDEO_WEBM) {
         _videoController?.pause();
         _videoController?.dispose();
 
-        _videoController = VideoPlayerController.network(repo.derpis[_pageController.page.round()].representations.medium)
-        ..addListener(() {
-          setState(() {
-            _videoProgressPercent = (_videoController.value.position.inMilliseconds / _videoController.value.duration.inMilliseconds).clamp(0.0, 1.0);
+        _videoController = VideoPlayerController.network(repo.derpis[_currentPage].representations.medium)
+          ..addListener(() {
+            setState(() {
+              _videoProgressPercent = (_videoController.value.position.inMilliseconds / _videoController.value.duration.inMilliseconds).clamp(0.0, 1.0);
+            });
+          })
+          ..initialize().then((_) {
+            _videoController.setVolume(_volume);
+            _videoController.setLooping(true);
+            if (_autoplay) _videoController.play();
           });
-        })
-        ..initialize().then((_) {
-          _videoController.setVolume(_volume);
-          _videoController.setLooping(true);
-          if (_autoplay) _videoController.play();
-          setState(() {});
-        });
-
       }
-      _currentPage = _pageController.page.round();
     }
 
     // Load new elements
@@ -136,166 +136,143 @@ class ImageViewerState extends State<ImageViewer> {
 
   @override
   Widget build(BuildContext mainContext) {
-    return Scaffold(
-      body: RawKeyboardListener(
-        autofocus: true,
-        focusNode: _focusNode,
-        onKey: (RawKeyEvent e) {
-          if (e.logicalKey == LogicalKeyboardKey.arrowLeft)
-            _pageController.previousPage(duration: Duration(milliseconds: 200), curve: Curves.easeInOut);
-          if (e.logicalKey == LogicalKeyboardKey.arrowRight)
-            _pageController.nextPage(duration: Duration(milliseconds: 200), curve: Curves.easeInOut);
-        },
-        child: Center(
-          child: PageView.builder(
-            controller: _pageController,
-            itemCount: repo.derpis.length,
-            physics: _isPageViewDisabled ? NeverScrollableScrollPhysics() : BouncingScrollPhysics(),
-            pageSnapping: true,
-            itemBuilder: (BuildContext context, int index) {
-              return Center(child: () {
-                if (repo.derpis[index].mimeType != MimeType.VIDEO_WEBM) {
-                  return ZoomableWidget (
-                    minScale: 1.0,
-                    maxScale: 5.0,
-                    autoCenter: true,
-                    onZoomChanged: (double zoom) {
-                      setState(() {
-                        _isPageViewDisabled = zoom > 1.0 ? true : false;
-                      });
-                    },
-                    child: Container(
-                      child: TransitionToImage(
-                        image: AdvancedNetworkImage(
-                            repo.getImageOfQuality(_quality, index),
-                            useDiskCache: true,
-                            cacheRule: CacheRule(maxAge: const Duration(days: 7))
-                        ),
-                        placeholder: Image(image: AssetImage('assets/logo-medium.png')),
-                        loadingWidgetBuilder: (BuildContext ctx, double progress, _) => CircularProgressIndicator(
-                          value: progress,
-                          semanticsValue: progress.toString(),
-                        ),
-                        fit: BoxFit.contain,
-                      ),
-                    ),
-                  );
-                } else {
-                  return Stack(
-                    children: <Widget>[
-                      Align(
-                        alignment: Alignment.center,
-                        // child: GestureDetector(
-                          child: _videoController.value.isInitialized
-                              ? AspectRatio(
-                                  aspectRatio: _videoController.value.aspectRatio,
-                                  child: VideoPlayer(_videoController),
-                                )
-                              : CircularProgressIndicator(),
-                          // onTap: () {
-                          //   setState(() {
-                          //     _videoController.value.isPlaying
-                          //         ? _videoController.pause()
-                          //         : _videoController.play();
-                          //     _autoplay = _autoplay ? false : true;
-                          //   });
-                          // },
-                        // ),
-                      ),
-                      Align(
-                        alignment: Alignment.bottomLeft,
-                        child: IconButton(
-                            icon: Icon(_videoController.value.isPlaying ? Icons.pause : Icons.play_arrow),
-                            onPressed: () => setState(() {
-                              _videoController.value.isPlaying
-                                  ? _videoController.pause()
-                                  : _videoController.play();
-                              _autoplay = _autoplay ? false : true;
-                            })
-                        ),
-                      ),
-                      Align(
-                        alignment: Alignment.bottomRight,
-                        child: IconButton(
-                            icon: Icon(_videoController.value.volume > 0 ? Icons.volume_up : Icons.volume_off),
-                            onPressed: () => setState(() {
-                              _videoController.value.volume > 0
-                                  ? _volume = 0.0
-                                  : _volume = 50.0;
-                              _videoController.setVolume(_volume);
-                            })
-                        ),
-                      ),
-                      Align(
-                        alignment: Alignment.bottomCenter,
+    return OrientationBuilder(builder: (BuildContext context, Orientation orientation) {
+      return Scaffold(
+          extendBodyBehindAppBar: orientation == Orientation.landscape,
+          extendBody: orientation == Orientation.landscape,
+          body: RawKeyboardListener(
+            autofocus: true,
+            focusNode: _focusNode,
+            onKey: (RawKeyEvent e) {
+              if (e.logicalKey == LogicalKeyboardKey.arrowLeft) _pageController.previousPage(duration: Duration(milliseconds: 200), curve: Curves.easeInOut);
+              if (e.logicalKey == LogicalKeyboardKey.arrowRight) _pageController.nextPage(duration: Duration(milliseconds: 200), curve: Curves.easeInOut);
+            },
+            child: Center(
+              child: PageView.builder(
+                controller: _pageController,
+                itemCount: repo.derpis.length,
+                physics: _isPageViewDisabled ? NeverScrollableScrollPhysics() : BouncingScrollPhysics(),
+                pageSnapping: true,
+                itemBuilder: (BuildContext context, int index) {
+                  return Center(child: () {
+                    if (repo.derpis[index].mimeType != MimeType.VIDEO_WEBM) {
+                      return ZoomableWidget(
+                        minScale: 1.0,
+                        maxScale: 5.0,
+                        autoCenter: true,
+                        onZoomChanged: (double zoom) {
+                          setState(() {
+                            _isPageViewDisabled = zoom > 1.0 ? true : false;
+                          });
+                        },
                         child: Container(
-                          height: 3,
-                          child: new LinearPercentIndicator(
-                            padding: EdgeInsets.all(0.0),
-                            linearStrokeCap: LinearStrokeCap.butt,
-                            lineHeight: 3.0,
-                            progressColor: Colors.teal,
-                            percent: _videoProgressPercent,
-                          )
+                          child: TransitionToImage(
+                            image: AdvancedNetworkImage(repo.getImageOfQuality(_quality, index), useDiskCache: true, cacheRule: CacheRule(maxAge: const Duration(days: 7))),
+                            placeholder: Image(image: AssetImage('assets/logo-medium.png')),
+                            loadingWidgetBuilder: (BuildContext ctx, double progress, _) => CircularProgressIndicator(
+                              value: progress,
+                              semanticsValue: progress.toString(),
+                            ),
+                            fit: BoxFit.contain,
+                          ),
                         ),
-                      )
-                    ],
-                  );
-                }
-              }());
-            },
-            onPageChanged: (pageId) {
-              setState(() {
-                _id = pageId.round();
-                _videoProgressPercent = 0.0;
-                _videoController.pause();
-              });
-            },
-          ),
-        ),
-      ),
-      bottomNavigationBar: BottomAppBar(
-        child: Padding(
-          padding: EdgeInsets.symmetric(horizontal: 30.0, vertical: 8.0),
-          child: Container(
-            height: 30,
-            child: Stack(
-//              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: <Widget>[
-                Align(
-                    alignment: Alignment.centerLeft,
-                    child: Text((_id + 1).toString() + '/' + repo.derpis.length.toString())),
-                Align(
-                  alignment: Alignment.center,
-                  child: GestureDetector(
-                    child: Icon(Icons.keyboard_arrow_up),
-                    onTap: () {
-                      showModalBottomSheet(
-                          context: mainContext,
-                          builder: (context) {
-                            Derpi derpi = repo.derpis[_id];
-                            return DetailsSheet(derpi: derpi);
-                          }
                       );
-                    },
-                  ),
-                ),
-                Align(
-                    alignment: Alignment.centerRight,
-                    child: Text(
-                        repo.derpis[_id].score.toString(),
-                        style: TextStyle(
-                            color: repo.derpis[_id].score >= 0
-                                ? Color.fromARGB(255, 0, 255, 0)
-                                : Color.fromARGB(255, 255, 0, 0)
-                        )
-                    )
-                )
-              ],
+                    } else {
+                      return Stack(
+                        children: <Widget>[
+                          Align(
+                            alignment: Alignment.center,
+                            child: _videoController.value.isInitialized
+                                ? AspectRatio(
+                                    aspectRatio: _videoController.value.aspectRatio,
+                                    child: VideoPlayer(_videoController),
+                                  )
+                                : CircularProgressIndicator(),
+                          ),
+                          Align(
+                            alignment: Alignment.bottomLeft,
+                            child: IconButton(
+                                icon: Icon(_videoController.value.isPlaying ? Icons.pause : Icons.play_arrow),
+                                onPressed: () => setState(() {
+                                      _videoController.value.isPlaying ? _videoController.pause() : _videoController.play();
+                                      _autoplay = _autoplay ? false : true;
+                                    })),
+                          ),
+                          Align(
+                            alignment: Alignment.bottomRight,
+                            child: IconButton(
+                                icon: Icon(_videoController.value.volume > 0 ? Icons.volume_up : Icons.volume_off),
+                                onPressed: () => setState(() {
+                                      _videoController.value.volume > 0 ? _volume = 0.0 : _volume = 50.0;
+                                      _videoController.setVolume(_volume);
+                                    })),
+                          ),
+                          Align(
+                            alignment: Alignment.bottomCenter,
+                            child: Container(
+                                height: 3,
+                                child: new LinearPercentIndicator(
+                                  padding: EdgeInsets.all(0.0),
+                                  linearStrokeCap: LinearStrokeCap.butt,
+                                  lineHeight: 3.0,
+                                  progressColor: Colors.teal,
+                                  percent: _videoProgressPercent,
+                                )),
+                          )
+                        ],
+                      );
+                    }
+                  }());
+                },
+                onPageChanged: (pageId) {
+                  setState(() {
+                    _id = pageId.round();
+                    _videoProgressPercent = 0.0;
+                    _videoController.pause();
+                  });
+                },
+              ),
             ),
           ),
-        ),
-      ),
-    );
+          bottomNavigationBar: OrientationBuilder(
+            builder: (BuildContext context, Orientation orientation) {
+              return BottomAppBar(
+                color: orientation == Orientation.landscape ? Colors.transparent : Theme.of(context).bottomAppBarColor,
+                elevation: orientation == Orientation.landscape ? 0.0 : 8.0,
+                child: Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 30.0, vertical: 8.0),
+                  child: Container(
+                    height: 30,
+                    child: Stack(
+                      children: <Widget>[
+                        Align(alignment: Alignment.centerLeft, child: Text("${(_id + 1)}/${repo.derpis.length}")),
+                        Align(
+                          alignment: Alignment.center,
+                          child: GestureDetector(
+                            child: Icon(Icons.keyboard_arrow_up),
+                            onTap: () {
+                              showModalBottomSheet(
+                                  context: mainContext,
+                                  builder: (context) {
+                                    Derpi derpi = repo.derpis[_id];
+                                    return DetailsSheet(derpi: derpi);
+                                  });
+                            },
+                          ),
+                        ),
+                        Align(
+                            alignment: Alignment.centerRight,
+                            child: Text(repo.derpis[_id].score.toString(),
+                                style: TextStyle(color: repo.derpis[_id].score >= 0
+                                    ? Color.fromARGB(255, 0, 255, 0)
+                                    : Color.fromARGB(255, 255, 0, 0))))
+                      ],
+                    ),
+                  ),
+                ),
+              );
+            },
+          ));
+    });
   }
 }

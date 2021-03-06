@@ -5,9 +5,13 @@ import 'package:percent_indicator/linear_percent_indicator.dart';
 import 'package:video_player/video_player.dart';
 
 class CustomVideoPlayer extends StatefulWidget {
-  CustomVideoPlayer({@required this.derpi});
+  CustomVideoPlayer({
+    @required this.derpi,
+    @required this.videoPlayerController
+  });
 
   final Derpi derpi;
+  final VideoPlayerController videoPlayerController;
 
   @override
   State<StatefulWidget> createState() => _CustomVideoPlayer();
@@ -24,6 +28,7 @@ class _CustomVideoPlayer extends State<CustomVideoPlayer> {
   @override
   void initState() {
     _derpi = widget.derpi;
+    _videoController = widget.videoPlayerController;
 
     super.initState();
   }
@@ -34,27 +39,6 @@ class _CustomVideoPlayer extends State<CustomVideoPlayer> {
     super.dispose();
   }
 
-  @override
-  didChangeDependencies() {
-    _videoController?.dispose();
-    _videoController =
-        VideoPlayerController.network(_derpi.representations.medium)
-          ..addListener(() {
-            setState(() {
-              if (_videoController.value.duration != null) {
-                _videoProgressPercent = (_videoController.value.position.inMilliseconds / _videoController.value.duration.inMilliseconds).clamp(0.0, 1.0);
-              }
-            });
-          })
-          ..initialize().then((_) {
-            _videoController.setVolume(_volume);
-            _videoController.setLooping(true);
-            if (_autoplay) _videoController.play();
-            setState(() {});
-          });
-
-    super.didChangeDependencies();
-  }
 
   @override
   Widget build(BuildContext context) {
