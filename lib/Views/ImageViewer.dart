@@ -1,3 +1,4 @@
+import 'package:chryssibooru/Elements/CustomVideoPlayer.dart';
 import 'package:chryssibooru/Elements/DetailsSheet.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_advanced_networkimage/provider.dart';
@@ -30,7 +31,7 @@ class ImageViewerState extends State<ImageViewer> {
 
   ImageViewerState({this.initialIndex});
 
-  VideoPlayerController _videoController;
+  // VideoPlayerController _videoController;
   double _volume = 0.0;
   bool _autoplay = false;
 
@@ -51,7 +52,7 @@ class ImageViewerState extends State<ImageViewer> {
 
   @override
   void dispose() {
-    _videoController.dispose();
+    // _videoController.dispose();
     _pageController.dispose();
     super.dispose();
   }
@@ -60,20 +61,20 @@ class ImageViewerState extends State<ImageViewer> {
   didChangeDependencies() {
     repo = p.Provider.of<DerpisRepo>(context);
 
-    _videoController?.dispose();
-    _videoController = VideoPlayerController.network(repo.derpis[_id].representations.medium)
-      ..addListener(() {
-        setState(() {
-          if (_videoController.value.duration != null)
-            _videoProgressPercent = (_videoController.value.position.inMilliseconds / _videoController.value.duration.inMilliseconds).clamp(0.0, 1.0);
-        });
-      })
-      ..initialize().then((_) {
-        _videoController.setVolume(_volume);
-        _videoController.setLooping(true);
-        if (_autoplay) _videoController.play();
-        setState(() {});
-      });
+    // _videoController?.dispose();
+    // _videoController = VideoPlayerController.network(repo.derpis[_id].representations.medium)
+    //   ..addListener(() {
+    //     setState(() {
+    //       if (_videoController.value.duration != null)
+    //         _videoProgressPercent = (_videoController.value.position.inMilliseconds / _videoController.value.duration.inMilliseconds).clamp(0.0, 1.0);
+    //     });
+    //   })
+    //   ..initialize().then((_) {
+    //     _videoController.setVolume(_volume);
+    //     _videoController.setLooping(true);
+    //     if (_autoplay) _videoController.play();
+    //     setState(() {});
+    //   });
 
     super.didChangeDependencies();
   }
@@ -97,23 +98,23 @@ class ImageViewerState extends State<ImageViewer> {
       setState(() {
         _currentPage = _pageController.page.round();
       });
-
-      if (repo.derpis[_currentPage].mimeType == MimeType.VIDEO_WEBM) {
-        _videoController?.pause();
-        _videoController?.dispose();
-
-        _videoController = VideoPlayerController.network(repo.derpis[_currentPage].representations.medium)
-          ..addListener(() {
-            setState(() {
-              _videoProgressPercent = (_videoController.value.position.inMilliseconds / _videoController.value.duration.inMilliseconds).clamp(0.0, 1.0);
-            });
-          })
-          ..initialize().then((_) {
-            _videoController.setVolume(_volume);
-            _videoController.setLooping(true);
-            if (_autoplay) _videoController.play();
-          });
-      }
+      //
+      // if (repo.derpis[_currentPage].mimeType == MimeType.VIDEO_WEBM) {
+      //   _videoController?.pause();
+      //   _videoController?.dispose();
+      //
+      //   _videoController = VideoPlayerController.network(repo.derpis[_currentPage].representations.medium)
+      //     ..addListener(() {
+      //       setState(() {
+      //         _videoProgressPercent = (_videoController.value.position.inMilliseconds / _videoController.value.duration.inMilliseconds).clamp(0.0, 1.0);
+      //       });
+      //     })
+      //     ..initialize().then((_) {
+      //       _videoController.setVolume(_volume);
+      //       _videoController.setLooping(true);
+      //       if (_autoplay) _videoController.play();
+      //     });
+      // }
     }
 
     // Load new elements
@@ -178,49 +179,54 @@ class ImageViewerState extends State<ImageViewer> {
                         ),
                       );
                     } else {
-                      return Stack(
-                        children: <Widget>[
-                          Align(
-                            alignment: Alignment.center,
-                            child: _videoController.value.isInitialized
-                                ? AspectRatio(
-                                    aspectRatio: _videoController.value.aspectRatio,
-                                    child: VideoPlayer(_videoController),
-                                  )
-                                : CircularProgressIndicator(),
-                          ),
-                          Align(
-                            alignment: Alignment.bottomLeft,
-                            child: IconButton(
-                                icon: Icon(_videoController.value.isPlaying ? Icons.pause : Icons.play_arrow),
-                                onPressed: () => setState(() {
-                                      _videoController.value.isPlaying ? _videoController.pause() : _videoController.play();
-                                      _autoplay = _autoplay ? false : true;
-                                    })),
-                          ),
-                          Align(
-                            alignment: Alignment.bottomRight,
-                            child: IconButton(
-                                icon: Icon(_videoController.value.volume > 0 ? Icons.volume_up : Icons.volume_off),
-                                onPressed: () => setState(() {
-                                      _videoController.value.volume > 0 ? _volume = 0.0 : _volume = 50.0;
-                                      _videoController.setVolume(_volume);
-                                    })),
-                          ),
-                          Align(
-                            alignment: Alignment.bottomCenter,
-                            child: Container(
-                                height: 3,
-                                child: new LinearPercentIndicator(
-                                  padding: EdgeInsets.all(0.0),
-                                  linearStrokeCap: LinearStrokeCap.butt,
-                                  lineHeight: 3.0,
-                                  progressColor: Colors.teal,
-                                  percent: _videoProgressPercent,
-                                )),
-                          )
-                        ],
+                      return CustomVideoPlayer(
+                        derpi: repo.derpis[_id],
+                        autoplay: _autoplay,
+                        volume: _volume,
                       );
+                      // return Stack(
+                      //   children: <Widget>[
+                      //     Align(
+                      //       alignment: Alignment.center,
+                      //       child: _videoController.value.isInitialized ?? false
+                      //           ? AspectRatio(
+                      //               aspectRatio: _videoController.value.aspectRatio,
+                      //               child: VideoPlayer(_videoController),
+                      //             )
+                      //           : CircularProgressIndicator(),
+                      //     ),
+                      //     Align(
+                      //       alignment: Alignment.bottomLeft,
+                      //       child: IconButton(
+                      //           icon: Icon(_videoController.value.isPlaying ? Icons.pause : Icons.play_arrow),
+                      //           onPressed: () => setState(() {
+                      //                 _videoController.value.isPlaying ? _videoController.pause() : _videoController.play();
+                      //                 _autoplay = _autoplay ? false : true;
+                      //               })),
+                      //     ),
+                      //     Align(
+                      //       alignment: Alignment.bottomRight,
+                      //       child: IconButton(
+                      //           icon: Icon(_videoController.value.volume > 0 ? Icons.volume_up : Icons.volume_off),
+                      //           onPressed: () => setState(() {
+                      //                 _videoController.value.volume > 0 ? _volume = 0.0 : _volume = 50.0;
+                      //                 _videoController.setVolume(_volume);
+                      //               })),
+                      //     ),
+                      //     Align(
+                      //       alignment: Alignment.bottomCenter,
+                      //       child: Container(
+                      //           height: 3,
+                      //           child: new LinearPercentIndicator(
+                      //             padding: EdgeInsets.all(0.0),
+                      //             linearStrokeCap: LinearStrokeCap.butt,
+                      //             lineHeight: 3.0,
+                      //             progressColor: Colors.teal,
+                      //             percent: _videoProgressPercent,
+                      //           )),
+                      //     )
+                      //   ],
+                      // );
                     }
                   }());
                 },
@@ -228,7 +234,7 @@ class ImageViewerState extends State<ImageViewer> {
                   setState(() {
                     _id = pageId.round();
                     _videoProgressPercent = 0.0;
-                    _videoController.pause();
+                    // _videoController.pause();
                   });
                 },
               ),
@@ -263,9 +269,7 @@ class ImageViewerState extends State<ImageViewer> {
                         Align(
                             alignment: Alignment.centerRight,
                             child: Text(repo.derpis[_id].score.toString(),
-                                style: TextStyle(color: repo.derpis[_id].score >= 0
-                                    ? Color.fromARGB(255, 0, 255, 0)
-                                    : Color.fromARGB(255, 255, 0, 0))))
+                                style: TextStyle(color: repo.derpis[_id].score >= 0 ? Color.fromARGB(255, 0, 255, 0) : Color.fromARGB(255, 255, 0, 0))))
                       ],
                     ),
                   ),
