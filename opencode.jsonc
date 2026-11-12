@@ -1,0 +1,11 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "mcp": {
+    "servers": {
+      "dart": {
+        "type": "local",
+        "command": ["dart", "mcp-server"],
+      },
+    },
+  },
+}

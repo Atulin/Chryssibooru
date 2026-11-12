@@ -1,0 +1,19 @@
+# yaml-language-server: $schema=https://taskfile.dev/schema.json
+
+version: "3"
+
+vars:
+  AGENT_NAME: "chryssiboorus-agent"
+  APP_VERSION:
+    sh: yq -r '.version' "./pubspec.yaml"
+
+tasks:
+  slop-setup:
+    cmd: sbx create --kit 'ghcr.io/atulin/dart-flutter:latest' --name '{{.AGENT_NAME}}' 'ghcr.io/atulin/opencode-sandbox:latest' .
+
+  slop:
+    cmds:
+      - sbx secret set github --sandbox '{{.AGENT_NAME}}' --command "gh auth token"
+      - sbx run --name '{{.AGENT_NAME}}' -e GITHUB_TOKEN=proxy-managed
+
+  release: git tag -s -a "v{{.APP_VERSION}}" -m "Release v{{.APP_VERSION}}" && git push origin "v{{.APP_VERSION}}"
