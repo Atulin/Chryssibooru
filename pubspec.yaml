@@ -1,63 +1,65 @@
 name: chryssibooru
 description: Derpibooru client made with Flutter
+publish_to: none
 
 # The following defines the version and build number for your application.
 # A version number is three numbers separated by dots, like 1.2.43
 # followed by an optional build number separated by a +.
 # Both the version and the builder number may be overridden in flutter
 # build by specifying --build-name and --build-number, respectively.
-# Read more about versioning at semver.org.
-version: 1.6.3 #+1
+version: 1.6.3
 
 environment:
-  sdk: ">=2.8.0 <3.0.0"
+  sdk: ^3.13.0
 
 dependencies:
   flutter:
     sdk: flutter
 
-  # The following adds the Cupertino Icons font to your application.
-  # Use with the CupertinoIcons class for iOS style icons.
-#  cupertino_icons: ^0.1.2
-
-#  http: ^0.13.0
-
-  flutter_advanced_networkimage:
-    git:
-      url: https://github.com/sur2548/flutter_advanced_networkimage.git
-      ref: migration-2.0
-  shared_preferences: ^2.0.3
-  provider: ^5.0.0
-  url_launcher: ^6.0.2
-  share: ^2.0.0
-  flutter_svg: ^0.19.3
-  image_downloader: ^0.20.1
-  video_player: ^2.0.0
-  flutter_slidable: ^0.6.0-nullsafety.0
-  percent_indicator: ^3.3.0-nullsafety.1
-#  get_version: ^0.2.2
-  package_info: ^2.0.0
-  logger: 1.0.0-nullsafety.0
-  logger_flutter: any
-  dio: ^4.0.0-beta4
-
+  # Image loading with disk cache, progress reporting, and error widgets.
+  cached_network_image: ^4.0.7
+  # Used to report and clear the image disk cache (drawer entry).
+  flutter_cache_manager: ^3.5.0
+  # SVG rendering for the logo and other branding assets.
+  flutter_svg: ^2.3.4
+  # Saving images to the device gallery (Android/iOS).
+  gal: ^3.0.0
+  # HTTP client for the Derpibooru API and downloads.
+  http: ^1.6.0
+  # Application version info (about dialog).
+  package_info_plus: ^10.2.2
+  # Cache directory lookup for the cache size readout.
+  path_provider: ^2.1.6
+  # Video playback progress bar.
+  percent_indicator: ^4.2.5
+  # State management for the search repository.
+  provider: ^6.1.5
+  # Sharing links to other apps.
+  share_plus: ^13.3.1
+  # Preferences, search history, favourites, API key storage.
+  shared_preferences: ^2.5.6
+  # Opening links in the browser.
+  url_launcher: ^6.3.3
+  # Image and video playback in the full-screen viewer.
+  video_player: ^2.14.1
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
 
-  flutter_launcher_icons: ^0.8.1
+  flutter_lints: ^6.0.0
 
+  # Used to fake directory lookups in widget tests.
+  path_provider_platform_interface: ^2.1.3
 
-flutter_icons:
+  flutter_launcher_icons: ^0.14.4
+
+flutter_launcher_icons:
   android: true
   ios: true
   image_path: "assets/logo-xlarge-sq.png"
   adaptive_icon_background: "#000000"
   adaptive_icon_foreground: "assets/logo-xlarge-sq.png"
-
-# For information on the generic Dart part of this file, see the
-# following page: https://www.dartlang.org/tools/pub/pubspec
 
 # The following section is specific to Flutter.
 flutter:
@@ -67,7 +69,6 @@ flutter:
   # the material Icons class.
   uses-material-design: true
 
-  # To add assets to your application, add an assets section, like this:
   assets:
     - assets/logo-small.png
     - assets/logo-medium.png
@@ -75,29 +76,3 @@ flutter:
     - assets/logo-xlarge.png
     - assets/logo.svg
     - assets/github.svg
-
-  # An image asset can refer to one or more resolution-specific "variants", see
-  # https://flutter.io/assets-and-images/#resolution-aware.
-
-  # For details regarding adding assets from package dependencies, see
-  # https://flutter.io/assets-and-images/#from-packages
-
-  # To add custom fonts to your application, add a fonts section here,
-  # in this "flutter" section. Each entry in this list should have a
-  # "family" key with the font family name, and a "fonts" key with a
-  # list giving the asset and other descriptors for the font. For
-  # example:
-  # fonts:
-  #   - family: Schyler
-  #     fonts:
-  #       - asset: fonts/Schyler-Regular.ttf
-  #       - asset: fonts/Schyler-Italic.ttf
-  #         style: italic
-  #   - family: Trajan Pro
-  #     fonts:
-  #       - asset: fonts/TrajanPro.ttf
-  #       - asset: fonts/TrajanPro_Bold.ttf
-  #         weight: 700
-  #
-  # For details regarding fonts from package dependencies,
-  # see https://flutter.io/custom-fonts/#from-packages

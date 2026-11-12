@@ -8,21 +8,49 @@ Derpibooru client made with Flutter
 ![License](https://img.shields.io/github/license/Atulin/Chryssibooru.svg)
 ![Latest release](https://img.shields.io/github/release/Atulin/Chryssibooru.svg)
 
-## Todo
+## Development
 
-* Themes?
+The application targets a current stable Flutter toolchain.
 
-## Wontdo
+* **Flutter 3.47.x** (Dart 3.13.x, included in the Flutter bundle)
+* Android: **Gradle 9.9.1**, **AGP 9.1**, **Kotlin 2.4**, compile/target SDK from
+  the Flutter defaults, minSdk from the Flutter defaults
+* iOS: deployment target **iOS 15**
+* Windows: CMake 3.14+ (runner from the current Flutter template)
 
-* Likes
-* Favourites
-* Comments
-* Anything that requires the user to log in, since Derpibooru API does not support it
+### Commands
+
+```sh
+flutter pub get          # fetch dependencies
+flutter analyze          # static analysis
+flutter test             # unit and widget tests (no network or API key needed)
+flutter run              # run on a connected device
+flutter build apk --debug  # Android debug build
+dart format lib test     # format
+```
+
+App icons are generated from `assets/logo-xlarge-sq.png` with:
+
+```sh
+dart run flutter_launcher_icons
+```
+
+### Supported platforms
+
+| Platform | Status |
+| -------- | ------ |
+| Android  | Actively maintained, verified with `flutter build apk --debug` |
+| iOS      | Runner modernized to the current Flutter template; not buildable from the current development environment (Linux), unverified |
+| Windows  | Runner modernized to the current Flutter template; not buildable from the current development environment (Linux), unverified |
 
 ## Known bugs
 
-* An error screen might sometimes flash briefly when swiping between video files.
-  It soon disappears, though, and the video loads fine. Happens only on slower devices or when loading large files.
+* Very recent WebM uploads have no animated `.gif` preview on Derpibooru's
+  CDN, so those grid tiles show the app logo instead of a preview. Older
+  WebMs still show their animated preview, as before.
+* An error screen might sometimes flash briefly when swiping between video
+  files. It soon disappears, though, and the video loads fine. Happens only
+  on slower devices or when loading large files.
 
 ## Screenshots
 
@@ -31,6 +59,28 @@ Derpibooru client made with Flutter
 | ![Main grid view](screenshots/gridview.jpg) | ![Full image view](screenshots/fullview.jpg) | ![Image details](screenshots/details.jpg) | ![App drawer](screenshots/drawer.jpg) |
 
 ## Changelog
+
+* **12.11.2026**
+  * Modernized the whole codebase: null-safe Dart on Flutter 3.47 / Dart 3.13
+  * Replaced dead and abandoned packages: `flutter_advanced_networkimage` →
+    `cached_network_image`, `share` → `share_plus`, `image_downloader` →
+    `http` + `gal`, `package_info` → `package_info_plus`
+  * Reworked pagination: concurrent duplicate requests are ignored,
+    duplicate results are filtered by image id, stale responses after a new
+    search are discarded, network errors are visible and retryable
+  * Search query building rewritten with proper URL encoding; empty API
+    keys are no longer sent
+  * Downloads now report success or failure with a snackbar
+  * Image zoom re-implemented with `InteractiveViewer` (pinch to zoom,
+    double-tap still resets); zooming no longer swipes between images
+  * Videos pause when navigating away or backgrounding the app; failed
+    video loads show a message instead of an error screen
+  * Search history and favourites no longer crash when empty
+  * Modernized the Android, iOS, and Windows runners to the current
+    Flutter templates while keeping the application identifier, icons, and
+    splash screen
+  * Added regression tests for parsing, query building, pagination
+    behaviour, and the main screens
 
 * **09.11.2020**
   * Fixed history and faves not updating the search query

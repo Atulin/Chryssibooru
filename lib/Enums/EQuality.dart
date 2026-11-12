@@ -1,6 +1,1 @@
-enum Quality {
-  Low,
-  Medium,
-  High,
-  Source
-}
+enum Quality { Low, Medium, High, Source }

@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
 
 class IcoText extends StatelessWidget {
-  const IcoText(
-      {Key key,
-      @required this.text,
-      @required this.icon,
-      @required this.color,
-      this.reverse = false})
-      : super(key: key);
+  const IcoText({
+    super.key,
+    required this.text,
+    required this.icon,
+    required this.color,
+    this.reverse = false,
+  });
 
   final String text;
   final IconData icon;
@@ -18,19 +18,11 @@ class IcoText extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Row(
+      textDirection: reverse ? TextDirection.rtl : TextDirection.ltr,
       children: [
-        Icon(
-          icon,
-          color: color,
-        ),
-        Text(
-          text,
-          style: TextStyle(color: color),
-        ),
+        Icon(icon, color: color),
+        Text(text, style: TextStyle(color: color)),
       ],
-      textDirection: reverse
-        ? TextDirection.rtl
-        : TextDirection.ltr,
     );
   }
 }

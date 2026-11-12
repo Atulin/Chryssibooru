@@ -1,6 +1,5 @@
 # Miscellaneous
 *.class
-*.lock
 *.log
 *.pyc
 *.swp
@@ -23,19 +22,24 @@
 **/doc/api/
 .dart_tool/
 .flutter-plugins
+.flutter-plugins-dependencies
 .packages
 .pub-cache/
 .pub/
 build/
 
+# The dependency lockfile of an application is version controlled.
+!pubspec.lock
+
 # Android related
-android-fuck/**/gradle-wrapper.jar
-android-fuck/.gradle
-android-fuck/captures/
-android-fuck/gradlew
-android-fuck/gradlew.bat
-android-fuck/local.properties
-android-fuck/**/GeneratedPluginRegistrant.java
+/android/.gradle/
+/android/captures/
+/android/local.properties
+/android/.idea/
+/android/key.properties
+**/android/**/gradle-wrapper.jar
+**/android/**/GeneratedPluginRegistrant.java
+gradle-wrapper.jar
 
 # iOS/XCode related
 **/ios/**/*.mode1v3
@@ -56,22 +60,35 @@ android-fuck/**/GeneratedPluginRegistrant.java
 **/ios/.generated/
 **/ios/Flutter/App.framework
 **/ios/Flutter/Flutter.framework
+**/ios/Flutter/Flutter.podspec
 **/ios/Flutter/Generated.xcconfig
+**/ios/Flutter/ephemeral
 **/ios/Flutter/app.flx
 **/ios/Flutter/app.zip
 **/ios/Flutter/flutter_assets/
+**/ios/Flutter/flutter_export_environment.sh
 **/ios/ServiceDefinitions.json
 **/ios/Runner/GeneratedPluginRegistrant.*
+
+# Windows related
+/windows/flutter/ephemeral/
+/windows/flutter/generated_plugin_registrant.*
+/windows/flutter/generated_plugins.cmake
 
 # Exceptions to above rules.
 !**/ios/**/default.mode1v3
 !**/ios/**/default.mode2v3
 !**/ios/**/default.pbxuser
 !**/ios/**/default.perspectivev3
-!/packages/flutter_tools/test/data/dart_dependencies_test/**/.packages
+!**/ios/**/default.profile
+!**/ios/**/default.xcworkspace
+!**/ios/**/default.xcworkspacedata
+!**/ios/**/default.xcscheme
+
+# Build outputs for local testing
+/.dist/
 
 /.gradle/
 *.afdesign
 /android-fuck/keystore.properties
 /release-shortcut.lnk
-/.flutter-plugins-dependencies

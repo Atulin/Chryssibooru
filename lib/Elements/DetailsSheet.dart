@@ -1,247 +1,231 @@
 import 'package:chryssibooru/API/v2/API.dart';
 import 'package:chryssibooru/DerpisRepo.dart';
 import 'package:chryssibooru/Elements/IcoText.dart';
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:share/share.dart';
-import 'package:provider/provider.dart' as p;
+import 'package:provider/provider.dart';
+import 'package:share_plus/share_plus.dart';
 
 import '../Helpers.dart';
 
 class DetailsSheet extends StatefulWidget {
-  DetailsSheet({
-    @required this.derpi
-  });
+  const DetailsSheet({super.key, required this.derpi});
 
   final Derpi derpi;
 
   @override
-  _DetailsSheet createState() => _DetailsSheet();
+  DetailsSheetState createState() => DetailsSheetState();
 }
 
-class _DetailsSheet extends State<DetailsSheet> {
+class DetailsSheetState extends State<DetailsSheet> {
+  late Derpi _derpi;
+  late List<Tag> _tags;
 
-  Derpi _derpi;
-  List<Tag> _tags;
-  DerpisRepo _repo;
-
-
-  @override
-  void didChangeDependencies() {
-    _repo = p.Provider.of<DerpisRepo>(context);
-    super.didChangeDependencies();
+  DerpisRepo? _repo;
+  DerpisRepo get repo {
+    _repo ??= context.read<DerpisRepo>();
+    return _repo!;
   }
 
   @override
-  void initState(){
+  void initState() {
     _derpi = widget.derpi;
     _tags = widget.derpi.tags;
-
     super.initState();
+  }
+
+  void _tagAction(String tag, void Function(String) action) {
+    repo.derpis = [];
+    action(tag);
+    repo.restartSearch();
+    Navigator.of(context).pop(); // Close the tag action sheet.
+  }
+
+  Future<void> _download(String url) async {
+    final message = await downloadImage(url);
+    if (!mounted) return;
+    Navigator.of(context, rootNavigator: true).pop();
+    ScaffoldMessenger.maybeOf(context)
+        ?.showSnackBar(SnackBar(content: Text(message)));
+  }
+
+  Widget _iconButton(
+    IconData icon,
+    String longPressLabel,
+    VoidCallback? onTap,
+  ) {
+    return SizedBox(
+      height: 30,
+      width: 30,
+      child: InkWell(
+        borderRadius: BorderRadius.all(Radius.circular(50.0)),
+        onTap: onTap,
+        onLongPress: () {
+          showModalBottomSheet(
+            context: context,
+            builder: (BuildContext context) {
+              return Padding(
+                padding: const EdgeInsets.all(8.0),
+                child: Text(longPressLabel),
+              );
+            },
+          );
+        },
+        child: Icon(icon),
+      ),
+    );
+  }
+
+  Widget _linkActionSheet(
+    String title,
+    String postLink,
+    String? imageLink,
+    void Function(String) action,
+  ) {
+    return SizedBox(
+      height: imageLink == null ? 50.0 : 100.0,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: <Widget>[
+          TextButton(
+            onPressed: () {
+              Navigator.of(context).pop();
+              action(postLink);
+            },
+            child: Text("Derpibooru post"),
+          ),
+          if (imageLink != null)
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+                action(imageLink);
+              },
+              child: Text("Direct image"),
+            ),
+        ],
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
-    return new Column(
+    final postUrl = "https://derpibooru.org/${_derpi.id}";
+    final directUrl = _derpi.representations.full;
+    final imageUrl = directUrl == null || directUrl.isEmpty
+        ? null
+        : "https:$directUrl";
+    return Column(
       children: <Widget>[
         Padding(
-          padding: const EdgeInsets.symmetric(
-              horizontal: 8.0, vertical: 1.0),
+          padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 1.0),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: <Widget>[
               Text(_derpi.id.toString()),
-              ButtonBar(
+              OverflowBar(
                 children: <Widget>[
-                  Container(
-                    height: 30,
-                    width: 30,
-                    child: InkWell(
-                      borderRadius:
-                      BorderRadius.all(Radius.circular(50.0)),
-                      child: Icon(Icons.share),
-                      onTap: () {
-                        showModalBottomSheet(
-                            context: context,
-                            builder: (BuildContext context) {
-                              return Container(
-                                height: 100.0,
-                                child: Column(
-                                  crossAxisAlignment:
-                                  CrossAxisAlignment.stretch,
-                                  children: <Widget>[
-                                    FlatButton(
-                                      onPressed: () => Share.share("https://derpibooru.org/" +_derpi.id.toString()),
-                                      child:Text("Derpibooru post"),
-                                    ),
-                                    FlatButton(
-                                      onPressed: () => Share.share("https:" + _derpi.representations.full),
-                                      child: Text("Direct image"),
-                                    )
-                                  ],
-                                ),
-                              );
-                            });
+                  _iconButton(Icons.share, "Share", () {
+                    showModalBottomSheet(
+                      context: context,
+                      builder: (BuildContext context) {
+                        return _linkActionSheet(
+                          "Share",
+                          postUrl,
+                          imageUrl,
+                          (link) =>
+                              SharePlus.instance.share(ShareParams(text: link)),
+                        );
                       },
-                      onLongPress: () {
-                        showModalBottomSheet(
-                            context: context,
-                            builder: (BuildContext context) {
-                              return Padding(
-                                padding: const EdgeInsets.all(8.0),
-                                child: Text("Share"),
-                              );
-                            });
+                    );
+                  }),
+                  _iconButton(Icons.link, "Open in browser", () {
+                    showModalBottomSheet(
+                      context: context,
+                      builder: (BuildContext context) {
+                        return _linkActionSheet(
+                          "Open in browser",
+                          postUrl,
+                          imageUrl,
+                          (link) async {
+                            final messenger = ScaffoldMessenger.maybeOf(
+                              context,
+                            );
+                            final ok = await openInBrowser(link);
+                            if (ok) return;
+                            messenger?.showSnackBar(
+                              SnackBar(
+                                content: Text('Could not open the link'),
+                              ),
+                            );
+                          },
+                        );
                       },
-                    ),
-                  ),
-                  Container(
-                    height: 30,
-                    width: 30,
-                    child: InkWell(
-                      borderRadius:
-                      BorderRadius.all(Radius.circular(50.0)),
-                      child: Icon(Icons.link),
-                      onTap: () {
-                        showModalBottomSheet(
-                            context: context,
-                            builder: (BuildContext context) {
-                              return Container(
-                                height: 100.0,
-                                child: Column(
-                                  crossAxisAlignment:
-                                  CrossAxisAlignment.stretch,
-                                  children: <Widget>[
-                                    FlatButton(
-                                      onPressed: () => openInBrowser("https://derpibooru.org/" +_derpi.id.toString()),
-                                      child:Text("Derpibooru post"),
-                                    ),
-                                    FlatButton(
-                                      onPressed: () => openInBrowser("https:" +_derpi.representations.full),
-                                      child: Text("Direct image"),
-                                    )
-                                  ],
-                                ),
-                              );
-                            });
+                    );
+                  }),
+                  _iconButton(Icons.content_copy, "Copy direct link", () {
+                    showModalBottomSheet(
+                      context: context,
+                      builder: (BuildContext context) {
+                        return _linkActionSheet(
+                          "Copy direct link",
+                          postUrl,
+                          imageUrl,
+                          (link) =>
+                              Clipboard.setData(ClipboardData(text: link)),
+                        );
                       },
-                      onLongPress: () {
-                        showModalBottomSheet(
-                            context: context,
-                            builder: (BuildContext context) {
-                              return Padding(
-                                padding: const EdgeInsets.all(8.0),
-                                child: Text("Open in browser"),
-                              );
-                            });
-                      },
-                    ),
-                  ),
-                  Container(
-                    height: 30,
-                    width: 30,
-                    child: InkWell(
-                      borderRadius:
-                      BorderRadius.all(Radius.circular(50.0)),
-                      child: Icon(Icons.content_copy),
-                      onTap: () {
-                        showModalBottomSheet(
-                            context: context,
-                            builder: (BuildContext context) {
-                              return Container(
-                                height: 100.0,
-                                child: Column(
-                                  crossAxisAlignment:
-                                  CrossAxisAlignment.stretch,
-                                  children: <Widget>[
-                                    FlatButton(
-                                      onPressed: () => Clipboard.setData(new ClipboardData(
-                                          text: "https://derpibooru.org/" +_derpi.id.toString())
-                                      ),
-                                      child:
-                                      Text("Derpibooru post"),
-                                    ),
-                                    FlatButton(
-                                      onPressed: () => Clipboard.setData(new ClipboardData(
-                                          text: "https:" + _derpi.representations.full)
-                                      ),
-                                      child: Text("Direct image"),
-                                    )
-                                  ],
-                                ),
-                              );
-                            });
-                      },
-                      onLongPress: () {
-                        showModalBottomSheet(
-                            context: context,
-                            builder: (BuildContext context) {
-                              return Padding(
-                                padding: const EdgeInsets.all(8.0),
-                                child: Text("Copy direct link"),
-                              );
-                            });
-                      },
-                    ),
-                  ),
-                  Container(
-                    height: 30,
-                    width: 30,
-                    child: InkWell(
-                      borderRadius:
-                      BorderRadius.all(Radius.circular(50.0)),
-                      child: Icon(Icons.file_download),
-                      onTap: () =>
-                          downloadImage(_derpi.representations.full),
-                      onLongPress: () {
-                        showModalBottomSheet(
-                            context: context,
-                            builder: (BuildContext context) {
-                              return Padding(
-                                padding: const EdgeInsets.all(8.0),
-                                child: Text("Download"),
-                              );
-                            });
-                      },
-                    ),
+                    );
+                  }),
+                  _iconButton(
+                    Icons.file_download,
+                    "Download",
+                    imageUrl == null
+                        ? null
+                        : () {
+                            showDialog(
+                              context: context,
+                              builder: (dialogContext) => AlertDialog(
+                                content: Text("Downloading image..."),
+                              ),
+                            );
+                            _download(imageUrl);
+                          },
                   ),
                 ],
-              )
+              ),
             ],
           ),
         ),
         ConstrainedBox(
-          constraints: new BoxConstraints(maxHeight: 100.0),
+          constraints: BoxConstraints(maxHeight: 100.0),
           child: Padding(
-            padding: const EdgeInsets.symmetric(
-                horizontal: 8.0, vertical: 4.0),
+            padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 4.0),
             child: Row(
               children: [
                 Spacer(flex: 10),
                 IcoText(
-                    text: _derpi.commentCount.toString(),
-                    icon: Icons.chat_bubble_outline,
-                    color: Color.fromARGB(255, 176, 153, 221)
+                  text: _derpi.commentCount.toString(),
+                  icon: Icons.chat_bubble_outline,
+                  color: Color.fromARGB(255, 176, 153, 221),
                 ),
                 Spacer(),
                 IcoText(
-                    text: _derpi.faves.toString(),
-                    icon: Icons.star_border,
-                    color: Colors.amber,
+                  text: _derpi.faves.toString(),
+                  icon: Icons.star_border,
+                  color: Colors.amber,
                 ),
                 Spacer(),
                 IcoText(
-                    text: (_derpi.score - _derpi.downvotes).toString(),
-                    icon: Icons.arrow_upward,
-                    color: Colors.green,
-                    reverse: true,
+                  text: (_derpi.score - _derpi.downvotes).toString(),
+                  icon: Icons.arrow_upward,
+                  color: Colors.green,
+                  reverse: true,
                 ),
                 Text(_derpi.score.toString()),
                 IcoText(
-                    text: _derpi.downvotes.toString(),
-                    icon: Icons.arrow_downward,
-                    color: Colors.red
+                  text: _derpi.downvotes.toString(),
+                  icon: Icons.arrow_downward,
+                  color: Colors.red,
                 ),
                 Spacer(flex: 10),
               ],
@@ -249,20 +233,18 @@ class _DetailsSheet extends State<DetailsSheet> {
           ),
         ),
         ConstrainedBox(
-          constraints: new BoxConstraints(maxHeight: 100.0),
+          constraints: BoxConstraints(maxHeight: 100.0),
           child: Padding(
-            padding: const EdgeInsets.symmetric(
-                horizontal: 8.0, vertical: 4.0),
+            padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 4.0),
             child: SingleChildScrollView(
               physics: BouncingScrollPhysics(),
-              child: Text(_derpi.description),
+              child: Text(_derpi.description ?? ''),
             ),
           ),
         ),
         Expanded(
           child: Padding(
-            padding: const EdgeInsets.symmetric(
-                horizontal: 4.0, vertical: 1.0),
+            padding: const EdgeInsets.symmetric(horizontal: 4.0, vertical: 1.0),
             child: SingleChildScrollView(
               physics: BouncingScrollPhysics(),
               child: Wrap(
@@ -275,68 +257,49 @@ class _DetailsSheet extends State<DetailsSheet> {
                       child: Chip(
                         padding: EdgeInsets.all(0),
                         label: Text(tag.label),
-                        backgroundColor: {
-                          TagType.ARTIST: Colors.blue,
-                          TagType.OC: Colors.green,
-                          TagType.SPOILER: Colors.red,
-                        }[tag.type] ??
+                        backgroundColor:
+                            {
+                              TagType.ARTIST: Colors.blue,
+                              TagType.OC: Colors.green,
+                              TagType.SPOILER: Colors.red,
+                            }[tag.type] ??
                             Colors.grey,
                       ),
                       onTap: () {
                         showModalBottomSheet(
-                            context: context,
-                            builder: (BuildContext c) {
-                              return Container(
-                                height: 150.0,
-                                child: Column(
-                                  crossAxisAlignment:
-                                  CrossAxisAlignment.stretch,
-                                  children: <Widget>[
-                                    FlatButton(
-                                      onPressed: () async {
-                                        _repo.derpis = new List<Derpi>();
-                                        _repo.addTag(tag.label);
-                                        await _repo.loadDerpis();
-                                        // setState(() {
-                                        //   _id = 0;
-                                        //   _pageController
-                                        //       .jumpToPage(0);
-                                        // });
-                                      },
-                                      child: Text("Add to search"),
-                                    ),
-                                    FlatButton(
-                                      onPressed: () async {
-                                        _repo.derpis = new List<Derpi>();
-                                        _repo.removeTag(tag.label);
-                                        await _repo.loadDerpis();
-                                        // setState(() {
-                                        //   _id = 0;
-                                        //   _pageController
-                                        //       .jumpToPage(0);
-                                        // });
-                                      },
-                                      child: Text("Remove from search"),
-                                    ),
-                                    FlatButton(
-                                      onPressed: () async {
-                                        _repo.derpis = new List<Derpi>();
-                                        _repo.query = tag.label;
-                                        await _repo.loadDerpis();
-                                        // setState(() {
-                                        //   _id = 0;
-                                        //   _pageController
-                                        //       .jumpToPage(0);
-                                        // });
-                                      },
-                                      child: Text("New search"),
-                                    )
-                                  ],
-                                ),
-                              );
-                            });
+                          context: context,
+                          builder: (BuildContext c) {
+                            return SizedBox(
+                              height: 150.0,
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.stretch,
+                                children: <Widget>[
+                                  TextButton(
+                                    onPressed: () =>
+                                        _tagAction(tag.label, repo.addTag),
+                                    child: Text("Add to search"),
+                                  ),
+                                  TextButton(
+                                    onPressed: () =>
+                                        _tagAction(tag.label, repo.removeTag),
+                                    child: Text("Remove from search"),
+                                  ),
+                                  TextButton(
+                                    onPressed: () {
+                                      repo.derpis = [];
+                                      repo.query = tag.label;
+                                      repo.restartSearch();
+                                      Navigator.of(context).pop();
+                                    },
+                                    child: Text("New search"),
+                                  ),
+                                ],
+                              ),
+                            );
+                          },
+                        );
                       },
-                    )
+                    ),
                 ],
               ),
             ),
@@ -345,7 +308,4 @@ class _DetailsSheet extends State<DetailsSheet> {
       ],
     );
   }
-
-
-
 }

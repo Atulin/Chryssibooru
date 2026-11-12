@@ -6,11 +6,11 @@ import 'package:provider/provider.dart' as p;
 void main() => runApp(MyApp());
 
 class MyApp extends StatelessWidget {
-  // This widget is the root of your application.
+  const MyApp({super.key});
+
   @override
   Widget build(BuildContext context) {
     return p.ListenableProvider<DerpisRepo>(
-//      builder: (c) => DerpisRepo(),
       create: (c) => DerpisRepo(),
       child: MaterialApp(
         title: 'Chryssibooru',
@@ -18,6 +18,10 @@ class MyApp extends StatelessWidget {
           brightness: Brightness.dark,
           primarySwatch: Colors.teal,
           fontFamily: 'Montserrat',
+          // Material 2 is used intentionally: the app's visual identity is
+          // based on Material 2 component styling (BottomAppBar, Chips,
+          // DropdownButton, Cards).
+          useMaterial3: false,
         ),
         home: HomePage(),
       ),

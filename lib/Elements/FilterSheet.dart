@@ -3,11 +3,18 @@ import 'package:flutter/material.dart';
 import 'package:chryssibooru/Enums/ESortMethod.dart';
 
 class FilterSheet extends StatefulWidget {
-  FilterSheet({
-    @required this.safe, @required this.questionable, @required this.explicit,
-    @required this.safeChanged, @required this.questionableChanged, @required this.explicitChanged,
-    @required this.quality, @required this.qualityChanged,
-    @required this.sortMethod, @required this.sortMethodChanged
+  const FilterSheet({
+    super.key,
+    required this.safe,
+    required this.questionable,
+    required this.explicit,
+    required this.safeChanged,
+    required this.questionableChanged,
+    required this.explicitChanged,
+    required this.quality,
+    required this.qualityChanged,
+    required this.sortMethod,
+    required this.sortMethodChanged,
   });
 
   final bool safe;
@@ -25,16 +32,16 @@ class FilterSheet extends StatefulWidget {
   final ValueChanged<ESortMethod> sortMethodChanged;
 
   @override
-  _FilterSheet createState() => _FilterSheet();
+  FilterSheetState createState() => FilterSheetState();
 }
 
-class _FilterSheet extends State<FilterSheet> {
-  bool _safe;
-  bool _questionable;
-  bool _explicit;
+class FilterSheetState extends State<FilterSheet> {
+  bool _safe = true;
+  bool _questionable = false;
+  bool _explicit = false;
 
-  Quality _quality;
-  ESortMethod _sortMethod;
+  Quality? _quality;
+  ESortMethod? _sortMethod;
 
   @override
   void initState() {
@@ -48,38 +55,38 @@ class _FilterSheet extends State<FilterSheet> {
 
   @override
   Widget build(BuildContext context) {
-    return new Column(
+    return Column(
       mainAxisSize: MainAxisSize.min,
       children: <Widget>[
-        new CheckboxListTile(
-          title: new Text('Safe'),
+        CheckboxListTile(
+          title: Text('Safe'),
           value: _safe,
-          onChanged: (bool newValue) {
+          onChanged: (bool? newValue) {
             setState(() {
-              _safe = newValue;
-              widget.safeChanged(newValue);
+              _safe = newValue ?? false;
+              widget.safeChanged(_safe);
             });
           },
           dense: true,
         ),
-        new CheckboxListTile(
-          title: new Text('Questionable'),
+        CheckboxListTile(
+          title: Text('Questionable'),
           value: _questionable,
-          onChanged: (bool newValue) {
+          onChanged: (bool? newValue) {
             setState(() {
-              _questionable = newValue;
-              widget.questionableChanged(newValue);
+              _questionable = newValue ?? false;
+              widget.questionableChanged(_questionable);
             });
           },
           dense: true,
         ),
-        new CheckboxListTile(
-          title: new Text('Explicit'),
+        CheckboxListTile(
+          title: Text('Explicit'),
           value: _explicit,
-          onChanged: (bool newValue) {
+          onChanged: (bool? newValue) {
             setState(() {
-              _explicit = newValue;
-              widget.explicitChanged(newValue);
+              _explicit = newValue ?? false;
+              widget.explicitChanged(_explicit);
             });
           },
           dense: true,
@@ -87,58 +94,51 @@ class _FilterSheet extends State<FilterSheet> {
         Row(
           mainAxisAlignment: MainAxisAlignment.start,
           children: <Widget>[
-
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 8, 8, 8),
               child: Text('Image quality:'),
             ),
-
-            new DropdownButton<Quality>(
+            DropdownButton<Quality>(
               value: _quality,
-                items: Quality.values.map((Quality q) {
-                  return DropdownMenuItem<Quality> (
-                    value: q,
-                    child: Text(q.toString().split('.')[1]),
-                  );
-                }).toList(),
-                onChanged: (Quality q) {
-                  setState(() {
-                    _quality = q;
-                    widget.qualityChanged(q);
-                  });
-                }
+              items: Quality.values.map((Quality q) {
+                return DropdownMenuItem<Quality>(value: q, child: Text(q.name));
+              }).toList(),
+              onChanged: (Quality? q) {
+                if (q == null) return;
+                setState(() {
+                  _quality = q;
+                  widget.qualityChanged(q);
+                });
+              },
             ),
           ],
         ),
         Row(
-            mainAxisAlignment: MainAxisAlignment.start,
-            children: <Widget>[
-
+          mainAxisAlignment: MainAxisAlignment.start,
+          children: <Widget>[
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 8, 8, 8),
               child: Text('Sort by:'),
             ),
-
-            new DropdownButton<ESortMethod>(
-                value: _sortMethod,
-                items: ESortMethod.values.map((ESortMethod s) {
-                  return DropdownMenuItem<ESortMethod> (
-                    value: s,
-                    child: Text(s.name()),
-                  );
-                }).toList(),
-                onChanged: (ESortMethod s) {
-                  setState(() {
-                    _sortMethod = s;
-                    widget.sortMethodChanged(s);
-                  });
-                }
+            DropdownButton<ESortMethod>(
+              value: _sortMethod,
+              items: ESortMethod.values.map((ESortMethod s) {
+                return DropdownMenuItem<ESortMethod>(
+                  value: s,
+                  child: Text(s.name()),
+                );
+              }).toList(),
+              onChanged: (ESortMethod? s) {
+                if (s == null) return;
+                setState(() {
+                  _sortMethod = s;
+                  widget.sortMethodChanged(s);
+                });
+              },
             ),
           ],
         ),
-        new ListTile(
-
-        ),
+        ListTile(),
       ],
     );
   }

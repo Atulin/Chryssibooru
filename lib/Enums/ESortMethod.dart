@@ -9,7 +9,7 @@ enum ESortMethod {
   FAVES_DESC,
   UPVOTES_ASC,
   UPVOTES_DESC,
-  RANDOM
+  RANDOM,
 }
 
 extension ESortMethodExtensions on ESortMethod {
@@ -33,8 +33,6 @@ extension ESortMethodExtensions on ESortMethod {
         return 'Upvotes \u{25BC}';
       case ESortMethod.RANDOM:
         return 'Random ⚂';
-      default:
-        return 'Unknown';
     }
   }
 
@@ -57,10 +55,8 @@ extension ESortMethodExtensions on ESortMethod {
       case ESortMethod.UPVOTES_DESC:
         return ["upvotes", "desc"];
       case ESortMethod.RANDOM:
-        var rnd = (new Random()).nextInt(10000).toString();
-        return ["random:" + rnd, "desc"];
-      default:
-        return [];
+        var rnd = (Random()).nextInt(10000).toString();
+        return ["random:$rnd", "desc"];
     }
   }
 }

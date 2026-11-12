@@ -1,0 +1,15 @@
+# This file configures the analyzer, which statically analyzes Dart code.
+analyzer:
+  exclude:
+    - build/**
+    - android/**
+    - ios/**
+    - windows/**
+include: package:flutter_lints/flutter.yaml
+
+linter:
+  rules:
+    # The project deliberately keeps its original naming style.
+    file_names: false
+    constant_identifier_names: false
+    prefer_const_constructors: false
