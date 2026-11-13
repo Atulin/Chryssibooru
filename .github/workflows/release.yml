@@ -159,6 +159,13 @@ jobs:
           flutter-version: ${{ env.FLUTTER_VERSION }}
           channel: stable
           cache: true
+      # GTK 3 development files are required for the Linux runner build
+      # and are not preinstalled on the runner image.
+      - name: Install Linux build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            cmake ninja-build clang pkg-config libgtk-3-dev
       - run: flutter pub get
       - run: flutter analyze
       - run: flutter test

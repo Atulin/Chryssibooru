@@ -80,12 +80,13 @@ gradle-wrapper.jar
 /linux/flutter/generated_plugin_registrant.*
 /linux/flutter/generated_plugins.cmake
 
-# macOS related
+# macOS related (the Flutter-Debug/Release.xcconfig wrappers are part of
+# the template and must be committed; ephemeral and generated files are
+# recreated by flutter pub get / build)
 /macos/Flutter/ephemeral/
-/macos/Flutter/GeneratedPluginRegistrant.*
+/macos/Flutter/GeneratedPluginRegistrant.swift
 /macos/Flutter/flutter_export_environment.sh
-/macos/Flutter/Flutter-*.xcconfig
-/macos/Flutter/flutter[+-]*/
+/macos/Flutter/flutter_native_integration.env
 
 
 # Exceptions to above rules.
