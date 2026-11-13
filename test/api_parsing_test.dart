@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:chryssibooru/API/v2/API.dart';
 import 'package:chryssibooru/Enums/ERepresentations.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -32,7 +34,10 @@ void main() {
     final body = searchResponseBody([
       fixtureImage(id: 7, mimeType: 'video/webm', format: 'webm'),
     ]);
-    final derpi = Derpibooru.fromJson(parseJson(body)).images.single;
+    final derpi = Derpibooru.fromJson(
+      parseJson(body),
+      host: 'booru.example',
+    ).images.single;
 
     expect(derpi.isVideo, isTrue);
     expect(derpi.mimeType, MimeType.VIDEO_WEBM);
@@ -79,7 +84,10 @@ void main() {
       ],
       "interactions": null
     }''';
-    final derpi = Derpibooru.fromJson(parseJson(body)).images.single;
+    final derpi = Derpibooru.fromJson(
+      parseJson(body),
+      host: 'booru.example',
+    ).images.single;
 
     expect(derpi.id, 5);
     expect(derpi.score, 0);
@@ -114,9 +122,50 @@ void main() {
         'representations': {'full': 'https://derpicdn.net/x/full.avif'},
       },
     ]);
-    final derpi = Derpibooru.fromJson(parseJson(body)).images.single;
+    final derpi = Derpibooru.fromJson(
+      parseJson(body),
+      host: 'booru.example',
+    ).images.single;
     expect(derpi.mimeType, isNull);
     expect(derpi.format, isNull);
     expect(derpi.representations.full, 'https://derpicdn.net/x/full.avif');
+  });
+
+  test('parses the Philomena V3 posts payload (e.g. Twibooru)', () {
+    final body = jsonEncode({
+      'total': 3,
+      'posts': [fixtureImage(id: 12, mimeType: 'image/png')],
+    });
+    final images = Derpibooru.fromJson(parseJson(body)).images;
+
+    expect(images, hasLength(1));
+    expect(images.single.id, 12);
+    expect(images.single.mimeType, MimeType.IMAGE_PNG);
+  });
+
+  test('normalizes representation URLs against the API host', () {
+    final body = searchResponseBody([
+      {
+        'id': 3,
+        'representations': {
+          'full': 'https://cdn.example/3/full.png',
+          'large': '//cdn.example/3/large.png',
+          'medium': '/img/3/medium.png',
+          'small': 'small.png',
+        },
+      },
+    ]);
+    final derpi = Derpibooru.fromJson(
+      parseJson(body),
+      host: 'booru.example',
+    ).images.single;
+
+    expect(derpi.representations.full, 'https://cdn.example/3/full.png');
+    expect(derpi.representations.large, 'https://cdn.example/3/large.png');
+    expect(
+      derpi.representations.medium,
+      'https://booru.example/img/3/medium.png',
+    );
+    expect(derpi.representations.small, 'https://booru.example/small.png');
   });
 }

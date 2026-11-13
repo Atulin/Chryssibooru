@@ -18,10 +18,13 @@ class Derpibooru {
 
   const Derpibooru({required this.images, required this.total});
 
-  factory Derpibooru.fromJson(Map<String, dynamic> json) => Derpibooru(
-    images: ((json['images'] as List?) ?? const [])
+  factory Derpibooru.fromJson(
+    Map<String, dynamic> json, {
+    String host = 'derpibooru.org',
+  }) => Derpibooru(
+    images: (((json['images'] ?? json['posts']) as List?) ?? const [])
         .whereType<Map<String, dynamic>>()
-        .map(Derpi.fromJson)
+        .map((image) => Derpi.fromJson(image, host: host))
         .toList(),
     total: (json['total'] as num?)?.toInt() ?? 0,
   );
@@ -101,7 +104,10 @@ class Derpi {
     this.sha512Hash,
   });
 
-  factory Derpi.fromJson(Map<String, dynamic> json) => Derpi(
+  factory Derpi.fromJson(
+    Map<String, dynamic> json, {
+    String host = 'derpibooru.org',
+  }) => Derpi(
     format: _enumFromJson(Format.values, _formatNames, json['format']),
     origSha512Hash: json['orig_sha512_hash'] as String?,
     firstSeenAt: _dateFromJson(json['first_seen_at']),
@@ -117,8 +123,8 @@ class Derpi {
     downvotes: (json['downvotes'] as num?)?.toInt() ?? 0,
     commentCount: (json['comment_count'] as num?)?.toInt() ?? 0,
     representations: json['representations'] is Map<String, dynamic>
-        ? Representations.fromJson(json['representations'])
-        : const Representations(),
+        ? Representations.fromJson(json['representations'], host: host)
+        : Representations(),
     score: (json['score'] as num?)?.toInt() ?? 0,
     width: (json['width'] as num?)?.toInt(),
     deletionReason: json['deletion_reason'] as String?,
@@ -222,6 +228,17 @@ enum MimeType {
   VIDEO_MP4,
 }
 
+/// Absolute [url] for the given API host, tolerating the URL shapes
+/// different Philomena instances return: absolute (`https://cdn…`),
+/// protocol-relative (`//cdn…`), and host-relative (`/img/…`).
+String normalizeBooruImageUrl(String? url, String host) {
+  if (url == null || url.isEmpty) return '';
+  if (url.startsWith('https://') || url.startsWith('http://')) return url;
+  if (url.startsWith('//')) return 'https:$url';
+  if (url.startsWith('/')) return 'https://$host$url';
+  return 'https://$host/$url';
+}
+
 class Representations {
   final String? full;
   final String? large;
@@ -262,17 +279,19 @@ class Representations {
     }
   }
 
-  factory Representations.fromJson(Map<String, dynamic> json) =>
-      Representations(
-        full: json['full'] as String?,
-        large: json['large'] as String?,
-        medium: json['medium'] as String?,
-        small: json['small'] as String?,
-        tall: json['tall'] as String?,
-        thumb: json['thumb'] as String?,
-        thumbSmall: json['thumb_small'] as String?,
-        thumbTiny: json['thumb_tiny'] as String?,
-      );
+  factory Representations.fromJson(
+    Map<String, dynamic> json, {
+    String host = 'derpibooru.org',
+  }) => Representations(
+    full: normalizeBooruImageUrl(json['full'] as String?, host),
+    large: normalizeBooruImageUrl(json['large'] as String?, host),
+    medium: normalizeBooruImageUrl(json['medium'] as String?, host),
+    small: normalizeBooruImageUrl(json['small'] as String?, host),
+    tall: normalizeBooruImageUrl(json['tall'] as String?, host),
+    thumb: normalizeBooruImageUrl(json['thumb'] as String?, host),
+    thumbSmall: normalizeBooruImageUrl(json['thumb_small'] as String?, host),
+    thumbTiny: normalizeBooruImageUrl(json['thumb_tiny'] as String?, host),
+  );
 }
 
 enum TagType {

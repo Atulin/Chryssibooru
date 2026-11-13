@@ -1,9 +1,11 @@
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:chryssibooru/API/v2/API.dart';
 import 'package:chryssibooru/DerpisRepo.dart';
 import 'package:chryssibooru/Elements/DetailsSheet.dart';
+import 'package:chryssibooru/Elements/ViewerBottomBar.dart';
+import 'package:chryssibooru/Elements/ZoomableImage.dart';
 import 'package:chryssibooru/Enums/EQuality.dart';
 import 'package:material_ui/material_ui.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/services.dart';
 import 'package:percent_indicator/linear_percent_indicator.dart';
 import 'package:provider/provider.dart';
@@ -35,10 +37,9 @@ class ImageViewerState extends State<ImageViewer> with WidgetsBindingObserver {
 
   double _videoProgressPercent = 0.0;
 
-  // For disabling the PageView when image is zoomed in.
-  bool _isPageViewDisabled = false;
-  final TransformationController _transformationController =
-      TransformationController();
+  // While an image is zoomed in, page swiping is disabled so panning the
+  // image takes precedence.
+  bool _imageZoomed = false;
 
   // Preferred image quality.
   Quality _quality = Quality.Medium;
@@ -58,7 +59,6 @@ class ImageViewerState extends State<ImageViewer> with WidgetsBindingObserver {
     _currentPage = widget.index;
     WidgetsBinding.instance.addObserver(this);
     _pageController = PageController(initialPage: initialIndex);
-    _transformationController.addListener(_onTransformationChanged);
     _getQualityPrefs();
     _setupVideoFor(initialIndex);
   }
@@ -66,7 +66,6 @@ class ImageViewerState extends State<ImageViewer> with WidgetsBindingObserver {
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
-    _transformationController.dispose();
     _disposeVideo();
     _pageController?.dispose();
     _focusNode.dispose();
@@ -82,15 +81,6 @@ class ImageViewerState extends State<ImageViewer> with WidgetsBindingObserver {
       _videoController?.pause();
     }
     super.didChangeAppLifecycleState(state);
-  }
-
-  void _onTransformationChanged() {
-    final zoomed = _transformationController.value.getMaxScaleOnAxis() > 1.001;
-    if (zoomed != _isPageViewDisabled) {
-      setState(() {
-        _isPageViewDisabled = zoomed;
-      });
-    }
   }
 
   void _getQualityPrefs() async {
@@ -171,6 +161,7 @@ class ImageViewerState extends State<ImageViewer> with WidgetsBindingObserver {
   void _onPageChanged(int pageId) {
     final page = pageId.round();
     if (page == _currentPage) return;
+    if (_imageZoomed) setState(() => _imageZoomed = false);
     setState(() {
       _currentPage = page;
       _videoProgressPercent = 0.0;
@@ -183,18 +174,23 @@ class ImageViewerState extends State<ImageViewer> with WidgetsBindingObserver {
     }
   }
 
+  void _onImageZoomChanged(bool zoomed) {
+    if (!mounted || _imageZoomed == zoomed) return;
+    setState(() => _imageZoomed = zoomed);
+  }
+
   KeyEventResult _onKeyEvent(FocusNode node, KeyEvent event) {
     if (event is KeyDownEvent || event is KeyRepeatEvent) {
       if (event.logicalKey == LogicalKeyboardKey.arrowLeft) {
         _pageController?.previousPage(
-          duration: Duration(milliseconds: 200),
+          duration: const Duration(milliseconds: 200),
           curve: Curves.easeInOut,
         );
         return KeyEventResult.handled;
       }
       if (event.logicalKey == LogicalKeyboardKey.arrowRight) {
         _pageController?.nextPage(
-          duration: Duration(milliseconds: 200),
+          duration: const Duration(milliseconds: 200),
           curve: Curves.easeInOut,
         );
         return KeyEventResult.handled;
@@ -203,97 +199,102 @@ class ImageViewerState extends State<ImageViewer> with WidgetsBindingObserver {
     return KeyEventResult.ignored;
   }
 
+  /// The entry for the current page, clamped to the loaded list. During a
+  /// fresh search (e.g. started by a tag action) the stored page position
+  /// can point past the new results.
+  Derpi? get _currentDerpi {
+    final list = repo.derpis;
+    if (list.isEmpty) return null;
+    return list[_currentPage.clamp(0, list.length - 1)];
+  }
+
   @override
   Widget build(BuildContext context) {
     // Subscribe to repo updates so the page count grows as more results
     // load while browsing.
     _repo = context.watch<DerpisRepo>();
     repo; // Ensure the repo reference is resolved.
+
+    // A fresh search empties the list; return the pager to page 0 so the
+    // stored position can't point past the new results.
+    if (repo.derpis.isEmpty) {
+      final pc = _pageController;
+      if (pc != null && pc.hasClients && pc.position.pixels != 0.0) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted && repo.derpis.isEmpty) pc.jumpToPage(0);
+        });
+      }
+      if (_currentPage != 0) _currentPage = 0;
+    } else if (_currentPage >= repo.derpis.length) {
+      // Defensive clamp while the new list is still shorter than the
+      // stored position.
+      _currentPage = repo.derpis.length - 1;
+    }
+
+    final current = _currentDerpi;
+
     return OrientationBuilder(
       builder: (BuildContext context, Orientation orientation) {
         return Scaffold(
-          extendBodyBehindAppBar: orientation == Orientation.landscape,
-          extendBody: orientation == Orientation.landscape,
           body: Focus(
             autofocus: true,
             focusNode: _focusNode,
             onKeyEvent: _onKeyEvent,
-            child: Center(
-              child: PageView.builder(
-                controller: _pageController,
-                itemCount: repo.derpis.length,
-                physics: _isPageViewDisabled
-                    ? NeverScrollableScrollPhysics()
-                    : BouncingScrollPhysics(),
-                pageSnapping: true,
-                onPageChanged: _onPageChanged,
-                itemBuilder: (BuildContext context, int index) {
-                  return Center(child: _buildEntry(index));
-                },
-              ),
-            ),
-          ),
-          bottomNavigationBar: OrientationBuilder(
-            builder: (BuildContext context, Orientation orientation) {
-              return BottomAppBar(
-                color: orientation == Orientation.landscape
-                    ? Colors.transparent
-                    : Theme.of(context).colorScheme.surface,
-                elevation: orientation == Orientation.landscape ? 0.0 : 8.0,
-                child: Padding(
-                  padding: EdgeInsets.symmetric(
-                    horizontal: 30.0,
-                    vertical: 8.0,
-                  ),
-                  child: SizedBox(
-                    height: 30,
-                    child: Stack(
-                      children: <Widget>[
-                        Align(
-                          alignment: Alignment.centerLeft,
-                          child: Text(
-                            "${(_currentPage + 1)}/${repo.derpis.length}",
-                          ),
-                        ),
-                        Align(
-                          alignment: Alignment.center,
-                          child: GestureDetector(
-                            child: Icon(Icons.keyboard_arrow_up),
-                            onTap: () {
-                              showModalBottomSheet(
-                                context: context,
-                                builder: (context) {
-                                  Derpi derpi = repo.derpis[_currentPage];
-                                  return DetailsSheet(derpi: derpi);
-                                },
-                              );
-                            },
-                          ),
-                        ),
-                        Align(
-                          alignment: Alignment.centerRight,
-                          child: Builder(
-                            builder: (context) {
-                              final score = repo.derpis[_currentPage].score;
-                              return Text(
-                                score.toString(),
-                                style: TextStyle(
-                                  color: score >= 0
-                                      ? Color.fromARGB(255, 0, 255, 0)
-                                      : Color.fromARGB(255, 255, 0, 0),
-                                ),
-                              );
-                            },
-                          ),
-                        ),
-                      ],
+            child: Column(
+              children: [
+                Expanded(
+                  child: ScrollConfiguration(
+                    behavior: ScrollConfiguration.of(context).copyWith(
+                      dragDevices: {
+                        PointerDeviceKind.touch,
+                        PointerDeviceKind.mouse,
+                        PointerDeviceKind.trackpad,
+                        PointerDeviceKind.stylus,
+                        PointerDeviceKind.invertedStylus,
+                      },
+                    ),
+                    child: PageView.builder(
+                      controller: _pageController,
+                      // While an image is zoomed in, swiping is disabled so
+                      // panning takes precedence; otherwise the page swipes
+                      // natively and partial swipes snap back.
+                      physics: _imageZoomed
+                          ? const NeverScrollableScrollPhysics()
+                          : const PageScrollPhysics(),
+                      onPageChanged: _onPageChanged,
+                      itemCount: repo.derpis.length,
+                      itemBuilder: (BuildContext context, int index) {
+                        return _buildEntry(index);
+                      },
                     ),
                   ),
                 ),
-              );
-            },
+                // The bar lives in the body (not in the Scaffold's
+                // bottomNavigationBar slot) so nothing can push its
+                // content below the screen edge.
+                ViewerBottomBar(
+                  currentIndex: repo.derpis.isEmpty
+                      ? 0
+                      : _currentPage.clamp(0, repo.derpis.length - 1),
+                  totalCount: repo.derpis.length,
+                  score: current?.score ?? 0,
+                  onDetailsRequested: _showDetails,
+                ),
+              ],
+            ),
           ),
         );
+      },
+    );
+  }
+
+  void _showDetails() {
+    final derpi = _currentDerpi;
+    if (derpi == null) return;
+    showModalBottomSheet(
+      context: context,
+      builder: (context) {
+        return DetailsSheet(derpi: derpi);
       },
     );
   }
@@ -308,33 +309,10 @@ class ImageViewerState extends State<ImageViewer> with WidgetsBindingObserver {
       // swipes to them, which avoids transient loading flashes.
       return _videoPlaceholder();
     }
-    return _buildZoomableImage(index, derpi);
-  }
-
-  Widget _buildZoomableImage(int index, Derpi derpi) {
-    final url = repo.getImageOfQuality(_quality, index);
-    if (url.isEmpty) {
-      return Image(image: AssetImage('assets/logo-medium.png'));
-    }
-    return InteractiveViewer(
-      transformationController: _transformationController,
-      minScale: 1.0,
-      maxScale: 5.0,
-      // Panning is only enabled while zoomed in, so a single-finger drag
-      // passes through to the PageView when at rest.
-      panEnabled: _isPageViewDisabled,
-      child: CachedNetworkImage(
-        imageUrl: url,
-        // No fade transitions: when swiping, media should appear
-        // instantly once it is available.
-        fadeInDuration: Duration.zero,
-        fadeOutDuration: Duration.zero,
-        placeholder: (context, url) =>
-            Image(image: AssetImage('assets/logo-medium.png')),
-        errorWidget: (context, url, error) =>
-            Image(image: AssetImage('assets/logo-medium.png')),
-        fit: BoxFit.contain,
-      ),
+    return ZoomableImage(
+      url: repo.getImageOfQuality(_quality, index),
+      isActive: index == _currentPage,
+      onZoomChanged: _onImageZoomChanged,
     );
   }
 

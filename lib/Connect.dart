@@ -25,23 +25,29 @@ Future<Map<String, dynamic>?> _fetchJson(String url) async {
 /// Fetches a page of search results. Returns `null` when the request
 /// failed (network error, non-200 response), and an empty list when the
 /// response contained no images.
-Future<List<Derpi>?> fetchDerpi(String url) async {
+Future<List<Derpi>?> fetchDerpi(
+  String url, {
+  String host = 'derpibooru.org',
+}) async {
   final data = await _fetchJson(url);
   if (data == null) return null;
 
-  return Derpibooru.fromJson(data).images;
+  return Derpibooru.fromJson(data, host: host).images;
 }
 
 /// Fetches a single image entry. Returns `null` when the request failed.
-Future<Derpi?> fetchSingleDerpi(String url) async {
+Future<Derpi?> fetchSingleDerpi(
+  String url, {
+  String host = 'derpibooru.org',
+}) async {
   final data = await _fetchJson(url);
   if (data == null) return null;
 
-  final images = data['images'];
+  final images = data['images'] ?? data['posts'];
   if (images is List &&
       images.isNotEmpty &&
       images.first is Map<String, dynamic>) {
-    return Derpi.fromJson(images.first as Map<String, dynamic>);
+    return Derpi.fromJson(images.first as Map<String, dynamic>, host: host);
   }
   return null;
 }

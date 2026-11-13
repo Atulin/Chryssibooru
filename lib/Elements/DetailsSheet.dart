@@ -49,60 +49,44 @@ class DetailsSheetState extends State<DetailsSheet> {
         ?.showSnackBar(SnackBar(content: Text(message)));
   }
 
-  Widget _iconButton(
-    IconData icon,
-    String longPressLabel,
-    VoidCallback? onTap,
-  ) {
-    return SizedBox(
-      height: 30,
-      width: 30,
-      child: InkWell(
-        borderRadius: BorderRadius.all(Radius.circular(50.0)),
-        onTap: onTap,
-        onLongPress: () {
-          showModalBottomSheet(
-            context: context,
-            builder: (BuildContext context) {
-              return Padding(
-                padding: const EdgeInsets.all(8.0),
-                child: Text(longPressLabel),
-              );
-            },
-          );
-        },
-        child: Icon(icon),
-      ),
+  Widget _iconButton(IconData icon, String tooltip, VoidCallback? onTap) {
+    return IconButton(
+      icon: Icon(icon),
+      tooltip: tooltip,
+      visualDensity: VisualDensity.compact,
+      onPressed: onTap,
     );
   }
 
   Widget _linkActionSheet(
-    String title,
     String postLink,
     String? imageLink,
     void Function(String) action,
   ) {
-    return SizedBox(
-      height: imageLink == null ? 50.0 : 100.0,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: <Widget>[
-          TextButton(
-            onPressed: () {
-              Navigator.of(context).pop();
-              action(postLink);
-            },
-            child: Text("Derpibooru post"),
-          ),
-          if (imageLink != null)
+    return SafeArea(
+      top: false,
+      child: SizedBox(
+        height: imageLink == null ? 50.0 : 100.0,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: <Widget>[
             TextButton(
               onPressed: () {
                 Navigator.of(context).pop();
-                action(imageLink);
+                action(postLink);
               },
-              child: Text("Direct image"),
+              child: Text("Derpibooru post"),
             ),
-        ],
+            if (imageLink != null)
+              TextButton(
+                onPressed: () {
+                  Navigator.of(context).pop();
+                  action(imageLink);
+                },
+                child: Text("Direct image"),
+              ),
+          ],
+        ),
       ),
     );
   }
@@ -114,198 +98,220 @@ class DetailsSheetState extends State<DetailsSheet> {
     final imageUrl = directUrl == null || directUrl.isEmpty
         ? null
         : "https:$directUrl";
-    return Column(
-      children: <Widget>[
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 1.0),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: <Widget>[
-              Text(_derpi.id.toString()),
-              OverflowBar(
-                children: <Widget>[
-                  _iconButton(Icons.share, "Share", () {
-                    showModalBottomSheet(
-                      context: context,
-                      builder: (BuildContext context) {
-                        return _linkActionSheet(
-                          "Share",
-                          postUrl,
-                          imageUrl,
-                          (link) =>
-                              SharePlus.instance.share(ShareParams(text: link)),
-                        );
-                      },
-                    );
-                  }),
-                  _iconButton(Icons.link, "Open in browser", () {
-                    showModalBottomSheet(
-                      context: context,
-                      builder: (BuildContext context) {
-                        return _linkActionSheet(
-                          "Open in browser",
-                          postUrl,
-                          imageUrl,
-                          (link) async {
+    return Padding(
+      // Room above the drag handle and below the system gesture bar.
+      padding: EdgeInsets.only(
+        top: 12.0,
+        bottom: MediaQuery.paddingOf(context).bottom,
+      ),
+      child: Column(
+        children: <Widget>[
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16.0, 0.0, 4.0, 0.0),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: <Widget>[
+                Text(_derpi.id.toString()),
+                OverflowBar(
+                  spacing: 4.0,
+                  children: <Widget>[
+                    _iconButton(Icons.share, "Share", () {
+                      showModalBottomSheet(
+                        context: context,
+                        builder: (BuildContext context) {
+                          return _linkActionSheet(
+                            postUrl,
+                            imageUrl,
+                            (link) => SharePlus.instance.share(
+                              ShareParams(text: link),
+                            ),
+                          );
+                        },
+                      );
+                    }),
+                    _iconButton(Icons.link, "Open in browser", () {
+                      showModalBottomSheet(
+                        context: context,
+                        builder: (BuildContext context) {
+                          return _linkActionSheet(postUrl, imageUrl, (
+                            link,
+                          ) async {
                             final messenger = ScaffoldMessenger.maybeOf(
                               context,
                             );
                             final ok = await openInBrowser(link);
                             if (ok) return;
                             messenger?.showSnackBar(
-                              SnackBar(
+                              const SnackBar(
                                 content: Text('Could not open the link'),
                               ),
                             );
-                          },
-                        );
-                      },
-                    );
-                  }),
-                  _iconButton(Icons.content_copy, "Copy direct link", () {
-                    showModalBottomSheet(
-                      context: context,
-                      builder: (BuildContext context) {
-                        return _linkActionSheet(
-                          "Copy direct link",
-                          postUrl,
-                          imageUrl,
-                          (link) =>
-                              Clipboard.setData(ClipboardData(text: link)),
-                        );
-                      },
-                    );
-                  }),
-                  _iconButton(
-                    Icons.file_download,
-                    "Download",
-                    imageUrl == null
-                        ? null
-                        : () {
-                            showDialog(
-                              context: context,
-                              builder: (dialogContext) => AlertDialog(
-                                content: Text("Downloading image..."),
-                              ),
-                            );
-                            _download(imageUrl);
-                          },
-                  ),
-                ],
-              ),
-            ],
-          ),
-        ),
-        ConstrainedBox(
-          constraints: BoxConstraints(maxHeight: 100.0),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 4.0),
-            child: Row(
-              children: [
-                Spacer(flex: 10),
-                IcoText(
-                  text: _derpi.commentCount.toString(),
-                  icon: Icons.chat_bubble_outline,
-                  color: Color.fromARGB(255, 176, 153, 221),
+                          });
+                        },
+                      );
+                    }),
+                    _iconButton(Icons.content_copy, "Copy link", () {
+                      showModalBottomSheet(
+                        context: context,
+                        builder: (BuildContext context) {
+                          return _linkActionSheet(
+                            postUrl,
+                            imageUrl,
+                            (link) =>
+                                Clipboard.setData(ClipboardData(text: link)),
+                          );
+                        },
+                      );
+                    }),
+                    _iconButton(
+                      Icons.file_download,
+                      "Download",
+                      imageUrl == null
+                          ? null
+                          : () {
+                              showDialog(
+                                context: context,
+                                builder: (dialogContext) => AlertDialog(
+                                  content: Text("Downloading image..."),
+                                ),
+                              );
+                              _download(imageUrl);
+                            },
+                    ),
+                  ],
                 ),
-                Spacer(),
-                IcoText(
-                  text: _derpi.faves.toString(),
-                  icon: Icons.star_border,
-                  color: Colors.amber,
-                ),
-                Spacer(),
-                IcoText(
-                  text: (_derpi.score - _derpi.downvotes).toString(),
-                  icon: Icons.arrow_upward,
-                  color: Colors.green,
-                  reverse: true,
-                ),
-                Text(_derpi.score.toString()),
-                IcoText(
-                  text: _derpi.downvotes.toString(),
-                  icon: Icons.arrow_downward,
-                  color: Colors.red,
-                ),
-                Spacer(flex: 10),
               ],
             ),
           ),
-        ),
-        ConstrainedBox(
-          constraints: BoxConstraints(maxHeight: 100.0),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 4.0),
-            child: SingleChildScrollView(
-              physics: BouncingScrollPhysics(),
-              child: Text(_derpi.description ?? ''),
-            ),
-          ),
-        ),
-        Expanded(
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 4.0, vertical: 1.0),
-            child: SingleChildScrollView(
-              physics: BouncingScrollPhysics(),
-              child: Wrap(
-                spacing: 5,
-                runSpacing: -5,
-                alignment: WrapAlignment.center,
+          ConstrainedBox(
+            constraints: const BoxConstraints(maxHeight: 100.0),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(
+                horizontal: 16.0,
+                vertical: 4.0,
+              ),
+              child: Row(
                 children: [
-                  for (final tag in _tags)
-                    GestureDetector(
-                      child: Chip(
-                        padding: EdgeInsets.all(0),
-                        label: Text(tag.label),
-                        backgroundColor:
-                            {
-                              TagType.ARTIST: Colors.blue,
-                              TagType.OC: Colors.green,
-                              TagType.SPOILER: Colors.red,
-                            }[tag.type] ??
-                            Colors.grey,
-                      ),
-                      onTap: () {
-                        showModalBottomSheet(
-                          context: context,
-                          builder: (BuildContext c) {
-                            return SizedBox(
-                              height: 150.0,
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.stretch,
-                                children: <Widget>[
-                                  TextButton(
-                                    onPressed: () =>
-                                        _tagAction(tag.label, repo.addTag),
-                                    child: Text("Add to search"),
-                                  ),
-                                  TextButton(
-                                    onPressed: () =>
-                                        _tagAction(tag.label, repo.removeTag),
-                                    child: Text("Remove from search"),
-                                  ),
-                                  TextButton(
-                                    onPressed: () {
-                                      repo.derpis = [];
-                                      repo.query = tag.label;
-                                      repo.restartSearch();
-                                      Navigator.of(context).pop();
-                                    },
-                                    child: Text("New search"),
-                                  ),
-                                ],
-                              ),
-                            );
-                          },
-                        );
-                      },
-                    ),
+                  const Spacer(flex: 10),
+                  IcoText(
+                    text: _derpi.commentCount.toString(),
+                    icon: Icons.chat_bubble_outline,
+                    color: const Color.fromARGB(255, 176, 153, 221),
+                  ),
+                  const Spacer(),
+                  IcoText(
+                    text: _derpi.faves.toString(),
+                    icon: Icons.star_border,
+                    color: Colors.amber,
+                  ),
+                  const Spacer(),
+                  IcoText(
+                    text: (_derpi.score - _derpi.downvotes).toString(),
+                    icon: Icons.arrow_upward,
+                    color: Colors.green,
+                    reverse: true,
+                  ),
+                  Text(_derpi.score.toString()),
+                  IcoText(
+                    text: _derpi.downvotes.toString(),
+                    icon: Icons.arrow_downward,
+                    color: Colors.red,
+                  ),
+                  const Spacer(flex: 10),
                 ],
               ),
             ),
           ),
-        ),
-      ],
+          ConstrainedBox(
+            constraints: const BoxConstraints(maxHeight: 100.0),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(
+                horizontal: 16.0,
+                vertical: 4.0,
+              ),
+              child: SingleChildScrollView(
+                physics: const BouncingScrollPhysics(),
+                child: Text(_derpi.description ?? ''),
+              ),
+            ),
+          ),
+          Expanded(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(
+                horizontal: 8.0,
+                vertical: 4.0,
+              ),
+              child: SingleChildScrollView(
+                physics: const BouncingScrollPhysics(),
+                child: Wrap(
+                  spacing: 5,
+                  runSpacing: 5,
+                  alignment: WrapAlignment.center,
+                  children: [for (final tag in _tags) _buildTagChip(tag)],
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Tag chip with an explicitly readable label colour — the Material 3
+  /// default dimmed the text into the background on the grey pills.
+  Widget _buildTagChip(Tag tag) {
+    final background =
+        {
+          TagType.ARTIST: Colors.blue,
+          TagType.OC: Colors.green,
+          TagType.SPOILER: Colors.red,
+        }[tag.type] ??
+        Colors.grey;
+    final labelColor = tag.type == null ? Colors.black87 : Colors.white;
+    return GestureDetector(
+      onTap: () {
+        showModalBottomSheet(
+          context: context,
+          builder: (BuildContext c) {
+            return SafeArea(
+              top: false,
+              child: SizedBox(
+                height: 150.0,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: <Widget>[
+                    TextButton(
+                      onPressed: () => _tagAction(tag.label, repo.addTag),
+                      child: Text("Add to search"),
+                    ),
+                    TextButton(
+                      onPressed: () => _tagAction(tag.label, repo.removeTag),
+                      child: Text("Remove from search"),
+                    ),
+                    TextButton(
+                      onPressed: () {
+                        repo.derpis = [];
+                        repo.query = tag.label;
+                        repo.restartSearch();
+                        Navigator.of(context).pop();
+                      },
+                      child: Text("New search"),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
+      child: Chip(
+        padding: const EdgeInsets.symmetric(horizontal: 8.0),
+        visualDensity: VisualDensity.compact,
+        materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+        label: Text(tag.label),
+        backgroundColor: background,
+        labelStyle: TextStyle(color: labelColor),
+      ),
     );
   }
 }

@@ -1,11 +1,34 @@
 import 'package:chryssibooru/API/v2/ImageList.dart';
+import 'package:chryssibooru/BooruSource.dart';
 import 'package:chryssibooru/Enums/ESortMethod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+BooruSource source([String key = '']) =>
+    BooruSource(id: 'test', name: 'Test', host: 'derpibooru.org', apiKey: key);
+
+Uri queryUri(
+  String query, {
+  bool s = true,
+  bool q = false,
+  bool e = false,
+  String key = '',
+  int page = 1,
+  ESortMethod sortMethod = ESortMethod.ID_DESC,
+}) => Uri.parse(
+  buildQuery(
+    source(key),
+    query,
+    s: s,
+    q: q,
+    e: e,
+    page: page,
+    sortMethod: sortMethod,
+  ),
+);
+
 void main() {
   test('buildQuery produces a valid HTTPS search URL', () {
-    final url = buildQuery('chrysalis', true, false, false, '', page: 1);
-    final uri = Uri.parse(url);
+    final uri = queryUri('chrysalis');
 
     expect(uri.scheme, 'https');
     expect(uri.host, 'derpibooru.org');
@@ -17,18 +40,22 @@ void main() {
   });
 
   test('no rating clause is added when all ratings are selected', () {
-    final url = buildQuery('chrysalis', true, true, true, '', page: 1);
-    expect(Uri.parse(url).queryParameters['q'], 'chrysalis');
+    expect(
+      queryUri('chrysalis', s: true, q: true, e: true).queryParameters['q'],
+      'chrysalis',
+    );
   });
 
   test('no rating clause is added when no rating is selected', () {
-    final url = buildQuery('chrysalis', false, false, false, '', page: 1);
-    expect(Uri.parse(url).queryParameters['q'], 'chrysalis');
+    expect(
+      queryUri('chrysalis', s: false, q: false, e: false).queryParameters['q'],
+      'chrysalis',
+    );
   });
 
   test('rating clauses use the shortest equivalent form', () {
     String? q(bool s, bool que, bool e) =>
-        Uri.parse(buildQuery('', s, que, e, '', page: 1)).queryParameters['q'];
+        queryUri('', s: s, q: que, e: e).queryParameters['q'];
 
     // A single selected rating is requested directly.
     expect(q(true, false, false), ', safe');
@@ -42,8 +69,11 @@ void main() {
   });
 
   test('API key replaces per_page; the rating clause still applies', () {
-    final url = buildQuery('chrysalis', true, false, false, 'sekret', page: 2);
-    final params = Uri.parse(url).queryParameters;
+    final params = queryUri(
+      'chrysalis',
+      key: 'sekret',
+      page: 2,
+    ).queryParameters;
     expect(params['key'], 'sekret');
     expect(params.containsKey('per_page'), isFalse);
     expect(params['page'], '2');
@@ -51,46 +81,37 @@ void main() {
   });
 
   test('sorting fields are mapped to sf/sd', () {
-    final urlAsc = buildQuery(
-      '',
-      true,
-      false,
-      false,
-      '',
-      sortMethod: ESortMethod.SCORE_ASC,
-    );
-    expect(Uri.parse(urlAsc).queryParameters['sf'], 'score');
-    expect(Uri.parse(urlAsc).queryParameters['sd'], 'asc');
-    final url = buildQuery(
-      '',
-      true,
-      false,
-      false,
-      '',
-      sortMethod: ESortMethod.UPVOTES_DESC,
-    );
-    final params = Uri.parse(url).queryParameters;
+    final urlAsc = queryUri('', sortMethod: ESortMethod.SCORE_ASC);
+    expect(urlAsc.queryParameters['sf'], 'score');
+    expect(urlAsc.queryParameters['sd'], 'asc');
+    final url = queryUri('', sortMethod: ESortMethod.UPVOTES_DESC);
+    final params = url.queryParameters;
     expect(params['sf'], 'upvotes');
     expect(params['sd'], 'desc');
   });
 
   test('random sort uses a random seed as sf', () {
-    final url = buildQuery(
-      '',
-      true,
-      false,
-      false,
-      '',
-      sortMethod: ESortMethod.RANDOM,
-    );
-    final params = Uri.parse(url).queryParameters;
+    final params = queryUri('', sortMethod: ESortMethod.RANDOM).queryParameters;
     expect(params['sf'], matches(RegExp(r'^random:\d+$')));
     expect(params['sd'], 'desc');
   });
 
   test('query characters are properly encoded', () {
-    final url = buildQuery('safe, artist:foo bar', true, false, false, '');
-    final q = Uri.parse(url).queryParameters['q']!;
+    final q = queryUri('safe, artist:foo bar').queryParameters['q']!;
     expect(q, 'safe, artist:foo bar, safe');
+  });
+
+  test('the search path follows the source API style', () {
+    final v3 = BooruSource(
+      id: 'twi',
+      name: 'Twibooru',
+      host: 'twibooru.org',
+      apiStyle: PhilomenaApiStyle.v3,
+    );
+    final uri = Uri.parse(
+      buildQuery(v3, 'safe', page: 1, sortMethod: ESortMethod.ID_DESC),
+    );
+    expect(uri.host, 'twibooru.org');
+    expect(uri.path, '/api/v3/search/posts');
   });
 }

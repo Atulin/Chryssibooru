@@ -12,6 +12,6 @@
          Flutter UI initializes, as well as behind your Flutter UI while its
          running. -->
     <style name="NormalTheme" parent="@android:style/Theme.Black.NoTitleBar">
-        <item name="android:windowBackground">?android:colorBackground</item>
+        <item name="android:windowBackground">@color/launch_background</item>
     </style>
 </resources>

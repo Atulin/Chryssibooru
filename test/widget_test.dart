@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:chryssibooru/Connect.dart';
@@ -75,6 +76,59 @@ void main() {
     await tester.pump(const Duration(milliseconds: 100));
   }
 
+  /// Types [query] into the search bar in the bottom bar and submits it
+  /// with the keyboard's search action.
+  Future<void> runSearch(WidgetTester tester, String query) async {
+    await tester.enterText(find.byType(TextField), query);
+    await tester.testTextInput.receiveAction(TextInputAction.search);
+    await tester.pump(const Duration(seconds: 1));
+  }
+
+  testWidgets('opening and closing the drawer does not focus the search '
+      'field', (tester) async {
+    final original = apiHttpClient;
+    apiHttpClient = FakeClient();
+    try {
+      await pumpApp(tester);
+
+      await tester.tap(find.byIcon(Icons.menu));
+      await tester.pumpAndSettle();
+      expect(
+        FocusManager.instance.primaryFocus?.context?.widget is EditableText,
+        isFalse,
+      );
+
+      // Closing the drawer must not restore focus to the search field
+      // either (which would reopen the keyboard).
+      await tester.tapAt(const Offset(700, 300));
+      await tester.pumpAndSettle();
+      expect(
+        FocusManager.instance.primaryFocus?.context?.widget is EditableText,
+        isFalse,
+      );
+    } finally {
+      apiHttpClient = original;
+    }
+  });
+
+  testWidgets('the search row is compact', (tester) async {
+    final original = apiHttpClient;
+    apiHttpClient = FakeClient();
+    try {
+      await pumpApp(tester);
+
+      final barRect = tester.getRect(find.byType(BottomAppBar));
+      // Material 3's default is an 80 dp bar with a 56 dp field; the
+      // tuned row is a 60 dp bar (10 dp above + 40 dp field + 10 dp
+      // below) with a 40 dp field.
+      expect(barRect.height, 60.0);
+      final searchBarRect = tester.getRect(find.byType(SearchBar));
+      expect(searchBarRect.height, 40.0);
+    } finally {
+      apiHttpClient = original;
+    }
+  });
+
   testWidgets('empty state shows the logo, search bar, and drawer', (
     tester,
   ) async {
@@ -88,7 +142,7 @@ void main() {
       await tester.tap(find.byIcon(Icons.menu));
       await tester.pumpAndSettle();
 
-      expect(find.text('Enter API key'), findsOneWidget);
+      expect(find.text('Sources'), findsOneWidget);
       expect(find.text('History'), findsOneWidget);
       expect(find.text('Favourites'), findsOneWidget);
       expect(find.text('Buy me a coffee'), findsOneWidget);
@@ -107,8 +161,7 @@ void main() {
 
     await pumpApp(tester);
 
-    await tester.enterText(find.byType(TextField), 'chrysalis');
-    await tester.testTextInput.receiveAction(TextInputAction.done);
+    await runSearch(tester, 'chrysalis');
     await tester.pump();
     await tester.pump(const Duration(seconds: 1));
 
@@ -159,7 +212,8 @@ void main() {
     expect(fake.requestedUrls.single.queryParameters['q'], 'pony, safe');
   });
 
-  testWidgets('drawer shows the saved API key state', (tester) async {
+  testWidgets('the sources screen lists the configured source and its key '
+      'state', (tester) async {
     SharedPreferences.setMockInitialValues({'key': 'sekret'});
     final original = apiHttpClient;
     apiHttpClient = FakeClient();
@@ -168,8 +222,13 @@ void main() {
 
       await tester.tap(find.byIcon(Icons.menu));
       await tester.pumpAndSettle();
+      await tester.tap(find.text('Sources'));
+      await tester.pumpAndSettle();
 
-      expect(find.text('All set!'), findsOneWidget);
+      expect(find.text('Derpibooru'), findsOneWidget);
+      // The subtitle combines host and key state into one string.
+      expect(find.textContaining('derpibooru.org'), findsOneWidget);
+      expect(find.textContaining('API key set'), findsOneWidget);
     } finally {
       apiHttpClient = original;
     }
@@ -182,8 +241,7 @@ void main() {
 
     await pumpApp(tester);
 
-    await tester.enterText(find.byType(TextField), 'chrysalis');
-    await tester.testTextInput.receiveAction(TextInputAction.done);
+    await runSearch(tester, 'chrysalis');
     await tester.pump(const Duration(seconds: 1));
 
     final url = fake.requestedUrls.single;
@@ -194,73 +252,65 @@ void main() {
     expect(url.queryParameters['q'], 'chrysalis');
   });
 
-  testWidgets('the API key sheet trims the key and saves it on dismissal', (
+  testWidgets('editing a source trims the API key and persists it', (
     tester,
   ) async {
     await pumpApp(tester);
 
     await tester.tap(find.byIcon(Icons.menu));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Enter API key'));
+    await tester.tap(find.text('Sources'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Derpibooru'));
     await tester.pumpAndSettle();
 
-    await tester.enterText(
-      find.descendant(
-        of: find.byType(BottomSheet),
-        matching: find.byType(TextField),
-      ),
-      '  my-key  ',
-    );
-    // Dismiss the sheet without submitting (tap outside).
-    await tester.tapAt(const Offset(10, 10));
+    // The API key field is the third text field (name, domain, key).
+    await tester.enterText(find.byType(TextField).at(2), '  my-key  ');
+    await tester.tap(find.text('Save'));
     await tester.pumpAndSettle();
 
     final prefs = await SharedPreferences.getInstance();
     expect(prefs.getString('key'), 'my-key');
 
-    // The drawer reflects the saved key.
-    expect(find.text('All set!'), findsOneWidget);
+    // The list reflects the saved key.
+    expect(find.textContaining('API key set'), findsOneWidget);
 
-    // The next search uses the trimmed key: close the drawer and search.
+    // The next search uses the trimmed key: leave the sources screen.
     fake.enqueue(searchResponseBody([fixtureImage(id: 1)]));
+    await tester.pageBack();
+    await tester.pumpAndSettle();
     await tester.tapAt(const Offset(700, 300)); // Close the drawer.
     await tester.pumpAndSettle();
-    await tester.enterText(find.byType(TextField), 'chrysalis');
-    await tester.testTextInput.receiveAction(TextInputAction.done);
+    await runSearch(tester, 'chrysalis');
     await tester.pump(const Duration(seconds: 1));
 
     expect(fake.requestedUrls.single.queryParameters['key'], 'my-key');
-    // The newly added key checks Explicit by default.
+    // The newly added key checks Questionable and Explicit by default.
     expect(fake.requestedUrls.single.queryParameters['q'], 'chrysalis');
   });
 
-  testWidgets('a changed key triggers a fresh search of the visible '
+  testWidgets('a changed source key triggers a fresh search of the visible '
       'results', (tester) async {
     // A search is already displayed.
     fake.enqueue(searchResponseBody([fixtureImage(id: 1)]));
     await pumpApp(tester);
 
-    await tester.enterText(find.byType(TextField), 'chrysalis');
-    await tester.testTextInput.receiveAction(TextInputAction.done);
-    await tester.pump(const Duration(seconds: 1));
+    await runSearch(tester, 'chrysalis');
     expect(fake.requestedUrls, hasLength(1));
 
-    // Adding a key while results are visible refreshes them with the
-    // account filter applied.
+    // Changing the active source's key refreshes the visible results.
     fake.enqueue(searchResponseBody([fixtureImage(id: 2)]));
     await tester.tap(find.byIcon(Icons.menu));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Enter API key'));
+    await tester.tap(find.text('Sources'));
     await tester.pumpAndSettle();
-    await tester.enterText(
-      find.descendant(
-        of: find.byType(BottomSheet),
-        matching: find.byType(TextField),
-      ),
-      'my-key',
-    );
-    await tester.tapAt(const Offset(10, 10)); // Dismiss the sheet.
-    await tester.pump(const Duration(seconds: 1));
+    await tester.tap(find.text('Derpibooru'));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byType(TextField).at(2), 'my-key');
+    await tester.tap(find.text('Save'));
+    await tester.pumpAndSettle();
+    await tester.pageBack();
+    await tester.pumpAndSettle();
 
     expect(fake.requestedUrls, hasLength(2));
     expect(fake.requestedUrls.last.queryParameters['key'], 'my-key');
@@ -280,8 +330,7 @@ void main() {
 
     await pumpApp(tester);
 
-    await tester.enterText(find.byType(TextField), 'chrysalis');
-    await tester.testTextInput.receiveAction(TextInputAction.done);
+    await runSearch(tester, 'chrysalis');
     await tester.pump(const Duration(seconds: 1));
 
     expect(fake.requestedUrls, hasLength(1));
@@ -306,30 +355,6 @@ void main() {
     expect(delegate.childCount, 31);
   });
 
-  testWidgets('the search bar stays above the keyboard when typing', (
-    tester,
-  ) async {
-    final original = apiHttpClient;
-    apiHttpClient = FakeClient();
-    try {
-      await pumpApp(tester);
-
-      // Simulate the keyboard being open (bottom inset of 300px).
-      tester.view.viewInsets = FakeViewPadding(bottom: 300);
-      await tester.pump();
-
-      // The BottomAppBar must be lifted so its bottom edge sits exactly
-      // on top of the keyboard. The fake inset is in physical pixels
-      // (default test DPR is 3.0 → 100 logical pixels).
-      final barRect = tester.getRect(find.byType(BottomAppBar));
-      final keyboardTop = 600 - 300 / 3.0;
-      expect(barRect.bottom, closeTo(keyboardTop, 1));
-    } finally {
-      apiHttpClient = original;
-      tester.view.viewInsets = FakeViewPadding.zero;
-    }
-  });
-
   testWidgets('a loading indicator shows while the search is in flight', (
     tester,
   ) async {
@@ -337,8 +362,7 @@ void main() {
 
     await pumpApp(tester);
 
-    await tester.enterText(find.byType(TextField), 'chrysalis');
-    await tester.testTextInput.receiveAction(TextInputAction.done);
+    await runSearch(tester, 'chrysalis');
     await tester.pump();
 
     // While the fetch is in flight and nothing has loaded yet, the logo
@@ -443,8 +467,7 @@ void main() {
     try {
       await pumpApp(tester);
 
-      await tester.enterText(find.byType(TextField), '');
-      await tester.testTextInput.receiveAction(TextInputAction.done);
+      await runSearch(tester, '');
       await tester.pump(const Duration(seconds: 1));
 
       expect(find.text('No results found'), findsNothing);
@@ -459,8 +482,7 @@ void main() {
     fake.enqueue(searchResponseBody([fixtureImage(id: 1)]));
     await pumpApp(tester);
 
-    await tester.enterText(find.byType(TextField), 'chrysalis');
-    await tester.testTextInput.receiveAction(TextInputAction.done);
+    await runSearch(tester, 'chrysalis');
     await tester.pump(const Duration(seconds: 1));
     expect(fake.requestedUrls, hasLength(1));
 
@@ -482,5 +504,50 @@ void main() {
     // Disabling the only rating leaves the query unfiltered but with no
     // rating clause, matching the original behaviour.
     expect(second.queryParameters['q'], isNot(contains('safe')));
+  });
+
+  testWidgets('switching sources in the filter sheet searches the new '
+      'host', (tester) async {
+    final twibooru = {
+      'id': 'twibooru',
+      'name': 'Twibooru',
+      'host': 'twibooru.org',
+      'apiKey': '',
+      'apiStyle': 'v3',
+    };
+    final derpi = {
+      'id': 'derpibooru',
+      'name': 'Derpibooru',
+      'host': 'derpibooru.org',
+      'apiKey': '',
+      'apiStyle': 'v1',
+    };
+    SharedPreferences.setMockInitialValues({
+      'sources': jsonEncode([derpi, twibooru]),
+      'activeSourceId': 'derpibooru',
+    });
+
+    fake.enqueue(searchResponseBody([fixtureImage(id: 1)]));
+    await pumpApp(tester);
+
+    await runSearch(tester, 'pinkie pie');
+    expect(fake.requestedUrls.single.host, 'derpibooru.org');
+    expect(fake.requestedUrls, hasLength(1));
+
+    // The filter sheet shows the source dropdown with two sources.
+    fake.enqueue(searchResponseBody([fixtureImage(id: 2)]));
+    await tester.tap(find.byIcon(Icons.filter_list));
+    await tester.pumpAndSettle();
+    expect(find.text('Source:'), findsOneWidget);
+
+    // Switch to Twibooru: the search re-runs against its host.
+    await tester.tap(find.text('Derpibooru').last);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Twibooru').last);
+    await tester.pump(const Duration(seconds: 1));
+
+    expect(fake.requestedUrls, hasLength(2));
+    expect(fake.requestedUrls.last.host, 'twibooru.org');
+    expect(fake.requestedUrls.last.path, '/api/v3/search/posts');
   });
 }

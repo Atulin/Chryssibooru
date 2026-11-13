@@ -1,26 +1,18 @@
-import 'dart:async';
-import 'dart:io';
-
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:chryssibooru/API/v2/API.dart';
-import 'package:chryssibooru/API/v2/ImageList.dart';
+import 'package:chryssibooru/BooruSource.dart';
 import 'package:chryssibooru/DerpisRepo.dart';
-import 'package:chryssibooru/Elements/FavouritesModal.dart';
+import 'package:chryssibooru/Elements/AppDrawer.dart';
+import 'package:chryssibooru/Elements/HomeBottomBar.dart';
+import 'package:chryssibooru/Views/ImageViewer.dart';
 import 'package:chryssibooru/Elements/FilterSheet.dart';
-import 'package:chryssibooru/Elements/HistoryModal.dart';
 import 'package:chryssibooru/Enums/EQuality.dart';
 import 'package:chryssibooru/Enums/ERepresentations.dart';
 import 'package:chryssibooru/Enums/ESortMethod.dart';
-import 'package:chryssibooru/Views/ImageViewer.dart';
 import 'package:material_ui/material_ui.dart';
-import 'package:flutter_cache_manager/flutter_cache_manager.dart';
 import 'package:flutter_svg/flutter_svg.dart';
-import 'package:path_provider/path_provider.dart';
-import 'package:package_info_plus/package_info_plus.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-
-import '../Helpers.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key, this.title});
@@ -32,8 +24,6 @@ class HomePage extends StatefulWidget {
 }
 
 class HomePageState extends State<HomePage> {
-  final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey();
-
   final ScrollController _scrollController = ScrollController();
 
   DerpisRepo? _repo;
@@ -49,27 +39,30 @@ class HomePageState extends State<HomePage> {
   Quality _quality = Quality.Medium;
   ESortMethod _sortMethod = ESortMethod.ID_DESC;
 
-  String? _headerImage;
-
-  String? currentVersion;
-
   String? _query;
-  TextEditingController searchControl = TextEditingController();
+  final TextEditingController _searchController = TextEditingController();
+  final FocusNode _searchFocusNode = FocusNode();
+  List<BooruSource> _sources = [BooruSource.defaultSource()];
+  String _activeSourceId = BooruSource.defaultSourceId;
 
-  int cacheSize = 0;
+  /// The repo query the search bar's text was last synced with, so the
+  /// bar follows query changes (e.g. from tag actions) without clobbering
+  /// text the user is typing when the query hasn't changed.
+  String? _lastSyncedQuery;
 
   @override
   void initState() {
     super.initState();
-    _getCacheSize();
-    _getCurrentVersion();
     _getPrefs();
+    _searchFocusNode.addListener(_onSearchFocusChanged);
   }
 
   @override
   void dispose() {
+    _searchFocusNode.removeListener(_onSearchFocusChanged);
     _scrollController.dispose();
-    searchControl.dispose();
+    _searchController.dispose();
+    _searchFocusNode.dispose();
     super.dispose();
   }
 
@@ -99,51 +92,23 @@ class HomePageState extends State<HomePage> {
     _showSnack('Loading more images failed');
   }
 
-  void _getCurrentVersion() async {
-    final packageInfo = await PackageInfo.fromPlatform();
-    if (!mounted) return;
-    setState(() {
-      currentVersion = packageInfo.version;
-    });
-  }
-
-  void _getCacheSize() async {
-    var cs = await _cacheSize();
-    if (!mounted) return;
-    setState(() {
-      cacheSize = cs;
-    });
-  }
-
-  /// Size of the image disk cache, in bytes.
-  Future<int> _cacheSize() async {
-    final dir = await getTemporaryDirectory();
-    final cacheDir = Directory(
-      '${dir.path}${Platform.pathSeparator}libCachedImageData',
-    );
-    if (!cacheDir.existsSync()) return 0;
-    var size = 0;
-    await for (final entity in cacheDir.list(
-      recursive: true,
-      followLinks: false,
-    )) {
-      if (entity is File) size += entity.lengthSync();
-    }
-    return size;
-  }
-
-  void cleanCache() async {
-    await DefaultCacheManager().emptyCache();
-    _getCacheSize();
-  }
-
   void _getPrefs() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     if (!mounted) return;
+    final sources = await SourcesStore.load(prefs);
+    final activeId = await SourcesStore.loadActiveId(prefs);
+    if (!mounted) return;
     setState(() {
-      // The key must be read first: the questionable and explicit
-      // ratings' defaults depend on it (they require a key to show).
-      repo.key = prefs.getString('key')?.trim() ?? '';
+      _sources = sources;
+      _activeSourceId = sources.any((s) => s.id == activeId)
+          ? activeId
+          : BooruSource.defaultSourceId;
+      // The source must be applied first: the questionable and explicit
+      // ratings' defaults depend on its API key (they require one).
+      repo.host = _activeSource.host;
+      repo.key = _activeSource.apiKey;
+      repo.searchPath = _activeSource.searchPath;
+      repo.resultKey = _activeSource.resultKey;
       _s = prefs.getBool('safe') ?? _s;
       _q = prefs.getBool('questionable') ?? repo.key.isNotEmpty;
       _e = prefs.getBool('explicit') ?? repo.key.isNotEmpty;
@@ -152,6 +117,7 @@ class HomePageState extends State<HomePage> {
       _sortMethod = ESortMethod
           .values[prefs.getInt('sortMethod') ?? ESortMethod.ID_DESC.index];
     });
+    repo.setRatings(_s, _q, _e);
   }
 
   void _saveQualityPrefs() async {
@@ -169,49 +135,6 @@ class HomePageState extends State<HomePage> {
     await prefs.setBool(name, value);
   }
 
-  void _saveKey(String key) async {
-    final trimmed = key.trim();
-    if (trimmed == repo.key) return;
-    final prefs = await SharedPreferences.getInstance();
-    if (!mounted) return;
-
-    setState(() {
-      repo.key = trimmed;
-      if (trimmed.isNotEmpty) {
-        // A key is what allows questionable and explicit results to be
-        // served at all, so both ratings are checked by default whenever
-        // a key is given. The user can still uncheck them afterwards.
-        _q = true;
-        _e = true;
-      } else {
-        // Without a key, questionable and explicit results cannot be
-        // displayed.
-        _q = false;
-        _e = false;
-      }
-    });
-
-    await prefs.setString('key', trimmed);
-
-    if (trimmed.isNotEmpty) {
-      await prefs.setBool('questionable', true);
-      await prefs.setBool('explicit', true);
-    } else {
-      // Reverting to the no-key default: drop any stored choices so a
-      // re-added key checks them again.
-      await prefs.remove('questionable');
-      await prefs.remove('explicit');
-    }
-
-    repo.setRatings(_s, _q, _e);
-
-    // The key changes what the search returns, so refresh an already
-    // visible result list right away.
-    if (repo.derpis.isNotEmpty) {
-      repo.newSearch();
-    }
-  }
-
   void _saveSearch(String search) async {
     if (search.isEmpty) return;
     SharedPreferences prefs = await SharedPreferences.getInstance();
@@ -222,6 +145,70 @@ class HomePageState extends State<HomePage> {
       history.add(search);
       await prefs.setStringList('history', history);
     }
+  }
+
+  BooruSource get _activeSource => _sources.firstWhere(
+    (s) => s.id == _activeSourceId,
+    orElse: () => _sources.first,
+  );
+
+  /// Applies the active source to the repo, keeping the rating defaults
+  /// in sync with the presence of an API key (a key unlocks NSFW, so
+  /// questionable and explicit are checked by default when one is
+  /// added, and unchecked when it is removed).
+  void _applyActiveSource({required bool refresh}) {
+    final active = _activeSource;
+    final hadKey = repo.key.isNotEmpty;
+    repo.host = active.host;
+    repo.key = active.apiKey;
+    repo.searchPath = active.searchPath;
+    repo.resultKey = active.resultKey;
+
+    if (!hadKey && repo.key.isNotEmpty) {
+      _q = true;
+      _e = true;
+    } else if (hadKey && repo.key.isEmpty) {
+      _q = false;
+      _e = false;
+    }
+    repo.setRatings(_s, _q, _e);
+
+    if (refresh) {
+      if (repo.query.isNotEmpty) {
+        _reactToSearchResult(repo.newSearch());
+      } else {
+        setState(() {});
+      }
+    }
+  }
+
+  /// Called when the drawer's sources screen changed anything.
+  void _onSourcesChanged(bool changed) {
+    if (!changed) return;
+    _reloadSources();
+  }
+
+  Future<void> _reloadSources() async {
+    final prefs = await SharedPreferences.getInstance();
+    final sources = await SourcesStore.load(prefs);
+    final activeId = await SourcesStore.loadActiveId(prefs);
+    if (!mounted) return;
+    setState(() {
+      _sources = sources;
+      _activeSourceId = sources.any((s) => s.id == activeId)
+          ? activeId
+          : BooruSource.defaultSourceId;
+    });
+    _applyActiveSource(refresh: repo.query.isNotEmpty);
+  }
+
+  /// Called when a different source is picked in the filter sheet.
+  void _onSourceSelected(BooruSource source) {
+    _activeSourceId = source.id;
+    SharedPreferences.getInstance().then((prefs) {
+      SourcesStore.saveActiveId(prefs, source.id);
+    });
+    _applyActiveSource(refresh: repo.query.isNotEmpty);
   }
 
   /// Applies the pending query/ratings/sort as a fresh search, preserving
@@ -244,6 +231,49 @@ class HomePageState extends State<HomePage> {
       });
       _reactToSearchResult(repo.newSearch());
     }
+  }
+
+  /// Opens the filter sheet and applies pending changes on close.
+  void _openFilterSheet() async {
+    await showModalBottomSheet<void>(
+      context: context,
+      builder: (BuildContext context) {
+        return FilterSheet(
+          hasKey: repo.key.isNotEmpty,
+          sources: _sources,
+          activeSourceId: _activeSourceId,
+          onSourceChanged: _onSourceSelected,
+          safe: _s,
+          safeChanged: (bool value) {
+            _s = value;
+            _saveRatingChoice('safe', value);
+          },
+          questionable: _q,
+          questionableChanged: (bool value) {
+            _q = value;
+            _saveRatingChoice('questionable', value);
+          },
+          explicit: _e,
+          explicitChanged: (bool value) {
+            _e = value;
+            _saveRatingChoice('explicit', value);
+          },
+          quality: _quality,
+          qualityChanged: (Quality q) {
+            _quality = q;
+            _saveQualityPrefs();
+          },
+          sortMethod: _sortMethod,
+          sortMethodChanged: (ESortMethod s) {
+            setState(() {
+              _sortMethod = s;
+              _saveSortMethodPrefs();
+            });
+          },
+        );
+      },
+    );
+    _onFilterSheetClosed();
   }
 
   /// Called when the filter sheet is closed. If the ratings or sorting
@@ -278,352 +308,135 @@ class HomePageState extends State<HomePage> {
         ?.showSnackBar(SnackBar(content: Text(message)));
   }
 
-  void updateSearch(String value) => setState(() => searchControl.text = value);
-
-  bool _isHeaderLoading = false;
-  void _setHeaderImage() async {
-    if (_isHeaderLoading) return;
-    setState(() {
-      _isHeaderLoading = true;
-    });
-    final derp = await getRandomImage(
-      'chrysalis,solo,transparent background,-webm',
-    );
-    if (!mounted) return;
-    final url = derp?.representations.medium ?? '';
-    if (url.isEmpty) {
-      setState(() {
-        _isHeaderLoading = false;
-      });
-      _showSnack('Could not load a random header image');
-      return;
-    }
-    // The old image stays visible (gapless playback) until the new one
-    // has loaded, then they crossfade.
-    setState(() {
-      _headerImage = url;
-      _isHeaderLoading = false;
-    });
-  }
+  void updateSearch(String value) =>
+      setState(() => _searchController.text = value);
 
   @override
   Widget build(BuildContext context) {
     // Subscribe to repo updates so the grid refreshes when a new page of
     // results loads.
     _repo = context.watch<DerpisRepo>();
+    // Mirror query changes (e.g. tag actions in the info sheet) into the
+    // search bar. Only fires when the query itself changed, so partially
+    // typed text is never overwritten by unrelated rebuilds.
+    if (repo.query != _lastSyncedQuery) {
+      _lastSyncedQuery = repo.query;
+      if (_searchController.text != repo.query) {
+        _searchController.text = repo.query;
+      }
+      // Query changes from anywhere (tag actions, history picks, ...)
+      // belong in the history too, not just submitted searches.
+      _saveSearch(repo.query);
+    }
     return Scaffold(
-      key: _scaffoldKey,
       body: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: <Widget>[
-            Expanded(
-              child: () {
-                if (repo.derpis.isEmpty) {
-                  return Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Image(image: AssetImage('assets/logo-medium.png')),
-                        if (!repo.loaded) ...[
-                          SizedBox(height: 16.0),
-                          CircularProgressIndicator(),
-                        ],
-                      ],
-                    ),
-                  );
-                } else {
-                  return Column(
-                    children: [
-                      Expanded(
-                        child: NotificationListener<ScrollNotification>(
-                          onNotification: _loadDerpisListener,
-                          child: GridView.builder(
-                            controller: _scrollController,
-                            itemCount: repo.derpis.length,
-                            scrollCacheExtent: ScrollCacheExtent.viewport(0.5),
-                            physics: BouncingScrollPhysics(),
-                            gridDelegate:
-                                SliverGridDelegateWithMaxCrossAxisExtent(
-                                  maxCrossAxisExtent: 200.0,
-                                  childAspectRatio: 1.0,
-                                  crossAxisSpacing: 4.0,
-                                  mainAxisSpacing: 4.0,
-                                ),
-                            itemBuilder: (BuildContext c, int index) {
-                              return GestureDetector(
-                                onTap: () {
-                                  Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder: (context) =>
-                                          ImageViewer(index: index),
-                                    ),
-                                  );
-                                },
-                                child: Card(
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.all(
-                                      Radius.circular(10.0),
-                                    ),
-                                  ),
-                                  elevation: 5,
-                                  child: Padding(
-                                    padding: EdgeInsets.all(0.2),
-                                    child: ClipRRect(
-                                      borderRadius: BorderRadius.all(
-                                        Radius.circular(10.0),
-                                      ),
-                                      child: _gridThumb(repo.derpis[index]),
-                                    ),
-                                  ),
-                                ),
-                              );
-                            },
-                          ),
-                        ),
-                      ),
-                      if (!repo.loaded)
-                        LinearProgressIndicator(
-                          minHeight: 2.0,
-                          color: Colors.teal,
-                        ),
-                    ],
-                  );
-                }
-              }(),
+            Expanded(child: _buildContent()),
+            // The search row lives in the body (not in the Scaffold's
+            // bottomNavigationBar slot) so resizeToAvoidBottomInset
+            // keeps it above the keyboard natively while typing.
+            HomeBottomBar(
+              searchController: _searchController,
+              searchFocusNode: _searchFocusNode,
+              onSearchSubmitted: _submitSearch,
+              onFilterPressed: _openFilterSheet,
             ),
           ],
-        ),
-      ),
-      // The keyboard covers the bottom bar on current Android versions
-      // (edge-to-edge), so it is lifted above the keyboard manually.
-      resizeToAvoidBottomInset: false,
-      bottomNavigationBar: Transform.translate(
-        offset: Offset(0.0, -1 * MediaQuery.of(context).viewInsets.bottom),
-        child: BottomAppBar(
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: <Widget>[
-              IconButton(
-                icon: Icon(Icons.menu),
-                onPressed: () {
-                  _scaffoldKey.currentState?.openDrawer();
-                },
-              ),
-              Expanded(
-                child: TextField(
-                  controller: searchControl,
-                  decoration: InputDecoration(
-                    border: InputBorder.none,
-                    hintText: 'Please enter a search term',
-                  ),
-                  onSubmitted: _submitSearch,
-                ),
-              ),
-              IconButton(
-                icon: Icon(Icons.filter_list),
-                onPressed: () async {
-                  await showModalBottomSheet<void>(
-                    context: context,
-                    builder: (BuildContext context) {
-                      return FilterSheet(
-                        hasKey: repo.key.isNotEmpty,
-                        safe: _s,
-                        safeChanged: (bool value) {
-                          _s = value;
-                          _saveRatingChoice('safe', value);
-                        },
-                        questionable: _q,
-                        questionableChanged: (bool value) {
-                          _q = value;
-                          _saveRatingChoice('questionable', value);
-                        },
-                        explicit: _e,
-                        explicitChanged: (bool value) {
-                          _e = value;
-                          _saveRatingChoice('explicit', value);
-                        },
-                        quality: _quality,
-                        qualityChanged: (Quality q) {
-                          _quality = q;
-                          _saveQualityPrefs();
-                        },
-                        sortMethod: _sortMethod,
-                        sortMethodChanged: (ESortMethod s) {
-                          setState(() {
-                            _sortMethod = s;
-                            _saveSortMethodPrefs();
-                          });
-                        },
-                      );
-                    },
-                  );
-                  _onFilterSheetClosed();
-                },
-              ),
-            ],
-          ),
         ),
       ),
 
-      drawer: Drawer(
-        child: ListView(
-          children: <Widget>[
-            DrawerHeader(
-              decoration: BoxDecoration(
-                color: Color.fromARGB(1, 100, 150, 150),
-              ),
-              child: Stack(
-                alignment: Alignment.center,
-                children: <Widget>[
-                  () {
-                    if (_headerImage != null) {
-                      return CachedNetworkImage(
-                        imageUrl: _headerImage!,
-                        placeholder: (context, url) =>
-                            SvgPicture.asset('assets/logo.svg'),
-                        errorWidget: (context, url, error) =>
-                            SvgPicture.asset('assets/logo.svg'),
-                        fit: BoxFit.cover,
-                        // Keep the previously shown image while the new
-                        // random one loads, then crossfade quickly from
-                        // it (or from the logo on the first load).
-                        useOldImageOnUrlChange: true,
-                        fadeInDuration: Duration(milliseconds: 300),
-                        fadeOutDuration: Duration(milliseconds: 300),
-                      );
-                    } else {
-                      return SvgPicture.asset('assets/logo.svg');
-                    }
-                  }(),
-                  Positioned(
-                    right: 0.0,
-                    bottom: 0.0,
-                    child: GestureDetector(
-                      child: Icon(
-                        Icons.shuffle,
-                        color: Color.fromARGB(50, 255, 255, 255),
-                        size: 20,
-                      ),
-                      onTap: () => _setHeaderImage(),
-                      onLongPress: () {
-                        setState(() {
-                          _headerImage = null;
-                          _isHeaderLoading = false;
-                        });
-                      },
-                    ),
-                  ),
-                  if (_isHeaderLoading)
-                    Positioned(
-                      left: 0.0,
-                      bottom: 0.0,
-                      child: Text(
-                        "Loading...",
-                        style: TextStyle(
-                          color: Color.fromARGB(50, 255, 255, 255),
-                        ),
-                      ),
-                    ),
-                ],
-              ),
-            ),
-            ListTile(
-              title: Text("Enter API key"),
-              subtitle: Text(
-                repo.key == ""
-                    ? "Get it on Derpibooru in account settings"
-                    : "All set!",
-                style: TextStyle(fontSize: 12.0),
-              ),
-              leading: Icon(Icons.vpn_key),
-              onTap: showKeySheet,
-            ),
-            ListTile(
-              title: Text("Cache size: ${parseFileSize(cacheSize)}"),
-              subtitle: Text(
-                "Tap to recalculate, hold to clean",
-                style: TextStyle(fontSize: 12.0),
-              ),
-              leading: Icon(Icons.folder_open),
-              onTap: _getCacheSize,
-              onLongPress: cleanCache,
-            ),
-            ListTile(
-              title: Text("History"),
-              subtitle: Text(
-                "See your previous searches",
-                style: TextStyle(fontSize: 12.0),
-              ),
-              leading: Icon(Icons.history),
-              onTap: () => showDialog(
-                context: context,
-                builder: (BuildContext context) {
-                  return HistoryModal(repo: repo, callback: updateSearch);
-                },
-              ),
-            ),
-            ListTile(
-              title: Text("Favourites"),
-              subtitle: Text(
-                "See your favourite searches",
-                style: TextStyle(fontSize: 12.0),
-              ),
-              leading: Icon(Icons.favorite),
-              onTap: () => showDialog(
-                context: context,
-                builder: (BuildContext context) {
-                  return FavouritesModal(repo: repo, callback: updateSearch);
-                },
-              ),
-            ),
-            Divider(),
-            ListTile(
-              title: Text("Buy me a coffee"),
-              subtitle: Text(
-                "Or two, I don't judge",
-                style: TextStyle(fontSize: 12.0),
-              ),
-              leading: Icon(Icons.free_breakfast),
-              onTap: () async {
-                final ok = await openInBrowser("https://ko-fi.com/angius");
-                if (!ok) _showSnack('Could not open the link');
-              },
-            ),
-            AboutListTile(
-              applicationIcon: SvgPicture.asset(
-                'assets/logo.svg',
-                height: 20,
-                width: 20,
-              ),
-              icon: Icon(Icons.info_outline),
-              applicationVersion: currentVersion,
-              aboutBoxChildren: <Widget>[
-                ElevatedButton(
-                  child: Text("Github repo"),
-                  onPressed: () async {
-                    final ok = await openInBrowser(
-                      "https://github.com/Atulin/Chryssibooru",
-                    );
-                    if (!ok) _showSnack('Could not open the link');
-                  },
-                ),
-                ElevatedButton(
-                  child: Text("Debug info"),
-                  onPressed: () => showModalBottomSheet(
-                    context: _scaffoldKey.currentContext ?? context,
-                    builder: (BuildContext context) {
-                      return Text(_query ?? "No recent queries");
-                    },
-                  ),
-                ),
-              ],
-            ),
-          ],
-        ),
+      drawer: AppDrawer(
+        onSearchSelected: updateSearch,
+        onSourcesChanged: _onSourcesChanged,
+        lastQuery: _query,
       ),
     );
+  }
+
+  void _onSearchFocusChanged() {
+    if (mounted) setState(() {});
+  }
+
+  /// The grid or the placeholder, depending on whether results exist.
+  Widget _buildGridOrLogo() {
+    if (repo.derpis.isEmpty) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Image(image: AssetImage('assets/logo-medium.png')),
+            if (!repo.loaded) ...[
+              SizedBox(height: 16.0),
+              CircularProgressIndicator(),
+            ],
+          ],
+        ),
+      );
+    }
+    return Column(
+      children: [
+        Expanded(
+          child: NotificationListener<ScrollNotification>(
+            onNotification: _loadDerpisListener,
+            child: GridView.builder(
+              controller: _scrollController,
+              itemCount: repo.derpis.length,
+              scrollCacheExtent: ScrollCacheExtent.viewport(0.5),
+              physics: const BouncingScrollPhysics(),
+              gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
+                maxCrossAxisExtent: 200.0,
+                childAspectRatio: 1.0,
+                crossAxisSpacing: 4.0,
+                mainAxisSpacing: 4.0,
+              ),
+              itemBuilder: (BuildContext c, int index) {
+                return GestureDetector(
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => ImageViewer(index: index),
+                      ),
+                    );
+                  },
+                  child: Card(
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.all(Radius.circular(10.0)),
+                    ),
+                    elevation: 5,
+                    child: Padding(
+                      padding: EdgeInsets.all(0.2),
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.all(Radius.circular(10.0)),
+                        child: _gridThumb(repo.derpis[index]),
+                      ),
+                    ),
+                  ),
+                );
+              },
+            ),
+          ),
+        ),
+        if (!repo.loaded)
+          LinearProgressIndicator(minHeight: 2.0, color: Colors.teal),
+      ],
+    );
+  }
+
+  /// The content area, absorbed while the search bar is focused so a tap
+  /// anywhere only dismisses the keyboard instead of opening an image.
+  Widget _buildContent() {
+    final content = _buildGridOrLogo();
+    if (_searchFocusNode.hasFocus) {
+      return GestureDetector(
+        onTap: () => FocusManager.instance.primaryFocus?.unfocus(),
+        behavior: HitTestBehavior.opaque,
+        child: IgnorePointer(child: content),
+      );
+    }
+    return content;
   }
 
   /// Grid thumbnail for an image entry, or the animated `.gif` preview for
@@ -652,43 +465,5 @@ class HomePageState extends State<HomePage> {
       fit: BoxFit.cover,
       fadeInDuration: Duration(milliseconds: 150),
     );
-  }
-
-  void showKeySheet() async {
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-    if (!mounted) return;
-    final currentKey = prefs.getString('key')?.trim() ?? '';
-    final keyControl = TextEditingController(text: currentKey);
-
-    await showModalBottomSheet<void>(
-      context: context,
-      builder: (BuildContext context) {
-        return Padding(
-          padding: EdgeInsets.fromLTRB(
-            10.0,
-            1.0,
-            10.0,
-            MediaQuery.of(context).viewInsets.bottom,
-          ),
-          child: TextField(
-            controller: keyControl,
-            decoration: InputDecoration(
-              border: InputBorder.none,
-              labelText: 'API key',
-              hintText: 'Your API key here',
-            ),
-            onSubmitted: (text) {
-              _saveKey(text);
-              Navigator.of(context).pop();
-            },
-            autofocus: true,
-          ),
-        );
-      },
-    );
-
-    // Also save when the sheet is dismissed without submitting (e.g. by
-    // tapping outside), so an entered key is never silently lost.
-    _saveKey(keyControl.text);
   }
 }

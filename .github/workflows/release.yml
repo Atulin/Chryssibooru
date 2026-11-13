@@ -38,10 +38,12 @@ jobs:
           flutter-version: ${{ env.FLUTTER_VERSION }}
           channel: stable
           cache: true
+      - name: Set build date
+        run: echo "BUILD_DATE=$(date -u '+%Y-%m-%d')" >> "$GITHUB_ENV"
       - run: flutter pub get
       - run: flutter analyze
       - run: flutter test
-      - run: flutter build apk --release
+      - run: flutter build apk --release --dart-define=BUILD_DATE=$BUILD_DATE
       - name: Rename APK
         run: |
           VERSION=$(sed -n 's/^version: \([0-9.]*\).*/\1/p' pubspec.yaml)
@@ -63,10 +65,13 @@ jobs:
           flutter-version: ${{ env.FLUTTER_VERSION }}
           channel: stable
           cache: true
+      - name: Set build date
+        shell: pwsh
+        run: 'Add-Content $env:GITHUB_ENV "BUILD_DATE=$(Get-Date -AsUTCDate -Format yyyy-MM-dd)"'
       - run: flutter pub get
       - run: flutter analyze
       - run: flutter test
-      - run: flutter build windows --release
+      - run: flutter build windows --release --dart-define=BUILD_DATE=$env:BUILD_DATE
       - name: Bundle the release folder
         shell: pwsh
         run: |
@@ -91,13 +96,15 @@ jobs:
           flutter-version: ${{ env.FLUTTER_VERSION }}
           channel: stable
           cache: true
+      - name: Set build date
+        run: echo "BUILD_DATE=$(date -u '+%Y-%m-%d')" >> "$GITHUB_ENV"
       - run: flutter pub get
       - run: flutter analyze
       - run: flutter test
       # No signing certificates are available in CI, so the app bundle is
       # built without codesigning and packaged into an unsigned IPA that
       # can be signed on-device or on a PC with Sideloadly / AltStore.
-      - run: flutter build ios --release --no-codesign
+      - run: flutter build ios --release --no-codesign --dart-define=BUILD_DATE=$BUILD_DATE
       - name: Package the unsigned IPA
         run: |
           VERSION=$(sed -n 's/^version: \([0-9.]*\).*/\1/p' pubspec.yaml)

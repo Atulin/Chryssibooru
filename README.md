@@ -8,6 +8,17 @@ Derpibooru client made with Flutter
 ![License](https://img.shields.io/github/license/Atulin/Chryssibooru.svg)
 ![Latest release](https://img.shields.io/github/release/Atulin/Chryssibooru.svg)
 
+## Features
+
+* Search Derpibooru and other Philomena-based boorus by tags, with rating
+  filters, sorting, image quality selection, and API keys per source
+* Paginated image grid with animated WebM previews, full-screen viewer
+  with pinch zoom and double-tap zoom, and video playback
+* Image details with description, tags, score, and share/copy/download
+* Search history and favourites, stored locally on the device
+* Multiple booru sources: add Philomena-based instances by name, domain,
+  API key, and API generation, and switch between them in the filter sheet
+
 ## Screenshots
 
 | Main grid view | Full image view | Image details | App drawer |
@@ -45,6 +56,12 @@ flutter build apk --debug  # Android debug build
 dart format lib test     # format
 ```
 
+Local builds can embed the build date shown in the About dialog with:
+
+```sh
+flutter build apk --release --dart-define=BUILD_DATE=$(date -u +%Y-%m-%d)
+```
+
 App icons are generated from `assets/logo-xlarge-sq.png` with:
 
 ```sh
@@ -57,6 +74,35 @@ dart run flutter_launcher_icons
      between the release-notes markers below. Move both markers down when
      adding a new entry. -->
 <!-- release-notes:start -->
+* **13.11.2026**
+  * Added booru sources: a drawer entry opens a management screen where
+    additional Philomena-based boorus can be configured by name, domain,
+    API key, and API generation (Philomena V1 / V3, e.g. Twibooru); the
+    active source is picked in the filter sheet when more than one source
+    is configured, and queries, media URLs, and image details adapt to
+    each source's URL shapes
+  * Replaced the search text field with the Material 3 search bar in the
+    bottom bar; taps anywhere dismiss the keyboard without triggering
+    the content underneath
+  * The launch screen shows the app logo on the app's dark surface
+    colour instead of a white flashbang, and the About dialog includes
+    the build date
+  * Slideshow zooming and swiping reworked after the Kemoshow-XP
+    approach: pinching no longer triggers page swipes, zoomed images pan
+    across the whole screen, and double-tap toggles the zoom level
+  * Info sheet: proper padding and touch targets, readable tag pills,
+    tag actions update the searchbar text and land in the history, and
+    the slideshow position resets to the first image of the new search
+  * Added booru sources: a drawer entry opens a management screen where
+    additional Philomena-based boorus can be configured by name, domain,
+    API key, and API generation (Philomena V1 / V3); the active source is
+    picked in the filter sheet when more than one source is configured,
+    and the searchbar follows query changes made through tag actions
+  * The launch screen now shows the app logo on the app's dark surface
+    colour instead of a white flashbang, and the About dialog includes
+    the build date
+<!-- release-notes:end -->
+
 * **12.11.2026**
   * Modernized the whole codebase: null-safe Dart on Flutter 3.47 / Dart 3.13
   * Migrated to Flutter 3.50 / Dart 3.14 and the decoupled `material_ui`
@@ -85,7 +131,6 @@ dart run flutter_launcher_icons
     notice when a page load fails), a loading indicator is shown while a
     search or the next page is loading, and images in the slideshow view
     appear instantly instead of fading in
-<!-- release-notes:end -->
 
 * **09.11.2020**
   * Fixed history and faves not updating the search query

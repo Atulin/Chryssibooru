@@ -1,4 +1,5 @@
 import 'package:chryssibooru/API/v2/API.dart';
+import 'package:chryssibooru/BooruSource.dart';
 import 'package:chryssibooru/API/v2/ImageList.dart';
 import 'package:chryssibooru/Enums/EQuality.dart';
 import 'package:chryssibooru/Enums/ESortMethod.dart';
@@ -39,8 +40,17 @@ class DerpisRepo extends ChangeNotifier {
   /// issuing requests until the next fresh search.
   bool endOfResults = false;
 
-  /// User's API key.
+  /// User's API key for the active source.
   String key = '';
+
+  /// API host of the active source.
+  String host = 'derpibooru.org';
+
+  /// Search endpoint path of the active source's API generation.
+  String searchPath = '/api/v1/json/search/images';
+
+  /// Payload key of the active source's search responses.
+  String resultKey = 'images';
 
   /// Image ratings to include.
   bool safe = true;
@@ -79,11 +89,11 @@ class DerpisRepo extends ChangeNotifier {
     final pageToFetch = page;
 
     final newImages = await searchImages(
+      _sourceForQuery(),
       query,
-      safe,
-      questionable,
-      explicit,
-      key,
+      s: safe,
+      q: questionable,
+      e: explicit,
       page: pageToFetch,
       sortMethod: sortMethod,
     );
@@ -135,13 +145,25 @@ class DerpisRepo extends ChangeNotifier {
   /// from the query.
   Future<LoadResult> restartSearch() => newSearch();
 
+  /// A throwaway [BooruSource] view of the active source's connection
+  /// fields, used by the query builder.
+  BooruSource _sourceForQuery() => BooruSource(
+    id: '',
+    name: '',
+    host: host,
+    apiKey: key,
+    apiStyle: resultKey == 'posts'
+        ? PhilomenaApiStyle.v3
+        : PhilomenaApiStyle.v1,
+  );
+
   /// Get the built query as string (for debugging).
   String getQuery() => buildQuery(
+    _sourceForQuery(),
     query,
-    safe,
-    questionable,
-    explicit,
-    key,
+    s: safe,
+    q: questionable,
+    e: explicit,
     page: page,
     sortMethod: sortMethod,
   );
