@@ -67,7 +67,9 @@ jobs:
           cache: true
       - name: Set build date
         shell: pwsh
-        run: 'Add-Content $env:GITHUB_ENV "BUILD_DATE=$(Get-Date -AsUTCDate -Format yyyy-MM-dd)"'
+        run: |
+          $buildDate = [DateTime]::UtcNow.ToString('yyyy-MM-dd')
+          Add-Content $env:GITHUB_ENV "BUILD_DATE=$buildDate"
       - run: flutter pub get
       - run: flutter analyze
       - run: flutter test
@@ -118,9 +120,63 @@ jobs:
           path: build/ios/chryssibooru-*-ios-unsigned.ipa
           if-no-files-found: error
 
+  build-macos:
+    name: Build macOS app
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v7
+      - name: Set build date
+        run: echo "BUILD_DATE=$(date -u '+%Y-%m-%d')" >> "$GITHUB_ENV"
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: stable
+          cache: true
+      - run: flutter pub get
+      - run: flutter analyze
+      - run: flutter test
+      - run: flutter build macos --release --dart-define=BUILD_DATE=$BUILD_DATE
+      - name: Bundle the app
+        run: |
+          VERSION=$(sed -n 's/^version: \([0-9.]*\).*/\1/p' pubspec.yaml)
+          cd build/macos/Build/Products/Release
+          zip -qry "$GITHUB_WORKSPACE/chryssibooru-${VERSION}-macos.zip" *.app
+      - uses: actions/upload-artifact@v7
+        with:
+          name: macos
+          path: chryssibooru-*-macos.zip
+          if-no-files-found: error
+
+  build-linux:
+    name: Build Linux bundle
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - name: Set build date
+        run: echo "BUILD_DATE=$(date -u '+%Y-%m-%d')" >> "$GITHUB_ENV"
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: stable
+          cache: true
+      - run: flutter pub get
+      - run: flutter analyze
+      - run: flutter test
+      - run: flutter build linux --release --dart-define=BUILD_DATE=$BUILD_DATE
+      - name: Bundle the release folder
+        run: |
+          VERSION=$(sed -n 's/^version: \([0-9.]*\).*/\1/p' pubspec.yaml)
+          cd build/linux/x64/release/bundle
+          tar -czf "$GITHUB_WORKSPACE/chryssibooru-${VERSION}-linux.tar.gz" .
+      - uses: actions/upload-artifact@v7
+        with:
+          name: linux
+          path: chryssibooru-*-linux.tar.gz
+          if-no-files-found: error
+
   release:
     name: Publish GitHub release
-    needs: [build-android, build-windows, build-ios]
+    needs: [build-android, build-windows, build-ios, build-macos, build-linux]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7

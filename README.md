@@ -44,6 +44,8 @@ The application targets a current stable Flutter toolchain.
   the Flutter defaults, minSdk from the Flutter defaults
 * iOS: deployment target **iOS 15**
 * Windows: CMake 3.14+ (runner from the current Flutter template)
+* macOS: runner from the current Flutter template
+* Linux: CMake 3.14+ (runner from the current Flutter template)
 
 ### Commands
 
@@ -87,6 +89,8 @@ dart run flutter_launcher_icons
   * The launch screen shows the app logo on the app's dark surface
     colour instead of a white flashbang, and the About dialog includes
     the build date
+  * The release workflow now also builds macOS and Linux bundles
+    alongside the Android, Windows, and iOS artifacts
   * Slideshow zooming and swiping reworked after the Kemoshow-XP
     approach: pinching no longer triggers page swipes, zoomed images pan
     across the whole screen, and double-tap toggles the zoom level

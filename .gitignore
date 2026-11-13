@@ -75,6 +75,19 @@ gradle-wrapper.jar
 /windows/flutter/generated_plugin_registrant.*
 /windows/flutter/generated_plugins.cmake
 
+# Linux related
+/linux/flutter/ephemeral/
+/linux/flutter/generated_plugin_registrant.*
+/linux/flutter/generated_plugins.cmake
+
+# macOS related
+/macos/Flutter/ephemeral/
+/macos/Flutter/GeneratedPluginRegistrant.*
+/macos/Flutter/flutter_export_environment.sh
+/macos/Flutter/Flutter-*.xcconfig
+/macos/Flutter/flutter[+-]*/
+
+
 # Exceptions to above rules.
 !**/ios/**/default.mode1v3
 !**/ios/**/default.mode2v3
