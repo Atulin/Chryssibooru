@@ -118,22 +118,22 @@ class DerpisRepo extends ChangeNotifier {
   }
 
   /// Starts a fresh search from page 1, clearing the current results and
-  /// discarding any in-flight page request. Returns true when images were
-  /// loaded.
-  Future<bool> newSearch() async {
+  /// discarding any in-flight page request. Returns the result of the
+  /// initial page load.
+  Future<LoadResult> newSearch() async {
     _requestToken++; // Invalidate in-flight page fetches.
     _isFetching = false;
     endOfResults = false;
     page = 1;
     derpis = [];
     notifyListeners();
-    return (await loadNextPage()) == LoadResult.added;
+    return loadNextPage();
   }
 
   /// Clears the current results and reloads page 1 for the existing
   /// query, ratings, and sorting. Used when tags are added or removed
   /// from the query.
-  Future<bool> restartSearch() => newSearch();
+  Future<LoadResult> restartSearch() => newSearch();
 
   /// Get the built query as string (for debugging).
   String getQuery() => buildQuery(

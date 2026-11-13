@@ -10,7 +10,7 @@ void main() {
     expect(uri.scheme, 'https');
     expect(uri.host, 'derpibooru.org');
     expect(uri.path, '/api/v1/json/search/images');
-    expect(uri.queryParameters['q'], 'chrysalis, (safe)');
+    expect(uri.queryParameters['q'], 'chrysalis, safe');
     expect(uri.queryParameters['page'], '1');
     expect(uri.queryParameters['per_page'], '30');
     expect(uri.queryParameters.containsKey('key'), isFalse);
@@ -26,17 +26,28 @@ void main() {
     expect(Uri.parse(url).queryParameters['q'], 'chrysalis');
   });
 
-  test('rating clause joins selected ratings with OR', () {
-    final url = buildQuery('', false, true, true, '', page: 1);
-    expect(Uri.parse(url).queryParameters['q'], ', (questionable OR explicit)');
+  test('rating clauses use the shortest equivalent form', () {
+    String? q(bool s, bool que, bool e) =>
+        Uri.parse(buildQuery('', s, que, e, '', page: 1)).queryParameters['q'];
+
+    // A single selected rating is requested directly.
+    expect(q(true, false, false), ', safe');
+    expect(q(false, true, false), ', questionable');
+    expect(q(false, false, true), ', explicit');
+
+    // Two selected ratings exclude the missing one.
+    expect(q(false, true, true), ', -safe');
+    expect(q(true, false, true), ', -questionable');
+    expect(q(true, true, false), ', -explicit');
   });
 
-  test('API key replaces per_page', () {
+  test('API key replaces per_page; the rating clause still applies', () {
     final url = buildQuery('chrysalis', true, false, false, 'sekret', page: 2);
     final params = Uri.parse(url).queryParameters;
     expect(params['key'], 'sekret');
     expect(params.containsKey('per_page'), isFalse);
     expect(params['page'], '2');
+    expect(params['q'], 'chrysalis, safe');
   });
 
   test('sorting fields are mapped to sf/sd', () {
@@ -80,6 +91,6 @@ void main() {
   test('query characters are properly encoded', () {
     final url = buildQuery('safe, artist:foo bar', true, false, false, '');
     final q = Uri.parse(url).queryParameters['q']!;
-    expect(q, 'safe, artist:foo bar, (safe)');
+    expect(q, 'safe, artist:foo bar, safe');
   });
 }

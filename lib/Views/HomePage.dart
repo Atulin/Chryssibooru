@@ -64,10 +64,7 @@ class HomePageState extends State<HomePage> {
     super.initState();
     _getCacheSize();
     _getCurrentVersion();
-    _getRatingPrefs();
-    _getQualityPrefs();
-    _getSortMethodPrefs();
-    _getKey();
+    _getPrefs();
   }
 
   @override
@@ -141,12 +138,20 @@ class HomePageState extends State<HomePage> {
     _getCacheSize();
   }
 
-  void _getQualityPrefs() async {
+  void _getPrefs() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     if (!mounted) return;
     setState(() {
+      // The key must be read first: the questionable and explicit
+      // ratings' defaults depend on it (they require a key to show).
+      repo.key = prefs.getString('key')?.trim() ?? '';
+      _s = prefs.getBool('safe') ?? _s;
+      _q = prefs.getBool('questionable') ?? repo.key.isNotEmpty;
+      _e = prefs.getBool('explicit') ?? repo.key.isNotEmpty;
       _quality =
           Quality.values[prefs.getInt('quality') ?? Quality.Medium.index];
+      _sortMethod = ESortMethod
+          .values[prefs.getInt('sortMethod') ?? ESortMethod.ID_DESC.index];
     });
   }
 
@@ -155,51 +160,57 @@ class HomePageState extends State<HomePage> {
     await prefs.setInt('quality', _quality.index);
   }
 
-  void _getSortMethodPrefs() async {
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-    if (!mounted) return;
-    setState(() {
-      _sortMethod = ESortMethod
-          .values[prefs.getInt('sortMethod') ?? ESortMethod.ID_DESC.index];
-    });
-  }
-
   void _saveSortMethodPrefs() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     await prefs.setInt('sortMethod', _sortMethod.index);
   }
 
-  void _getRatingPrefs() async {
+  void _saveRatingChoice(String name, bool value) async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
-    if (!mounted) return;
-    setState(() {
-      _s = prefs.getBool('safe') ?? _s;
-      _q = prefs.getBool('questionable') ?? _q;
-      _e = prefs.getBool('explicit') ?? _e;
-    });
-  }
-
-  void _saveRatingPrefs() async {
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-    await prefs.setBool('safe', _s);
-    await prefs.setBool('questionable', _q);
-    await prefs.setBool('explicit', _e);
+    await prefs.setBool(name, value);
   }
 
   void _saveKey(String key) async {
-    setState(() {
-      repo.key = key;
-    });
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-    await prefs.setString('key', key);
-  }
-
-  void _getKey() async {
-    SharedPreferences prefs = await SharedPreferences.getInstance();
+    final trimmed = key.trim();
+    if (trimmed == repo.key) return;
+    final prefs = await SharedPreferences.getInstance();
     if (!mounted) return;
+
     setState(() {
-      repo.key = prefs.getString('key') ?? '';
+      repo.key = trimmed;
+      if (trimmed.isNotEmpty) {
+        // A key is what allows questionable and explicit results to be
+        // served at all, so both ratings are checked by default whenever
+        // a key is given. The user can still uncheck them afterwards.
+        _q = true;
+        _e = true;
+      } else {
+        // Without a key, questionable and explicit results cannot be
+        // displayed.
+        _q = false;
+        _e = false;
+      }
     });
+
+    await prefs.setString('key', trimmed);
+
+    if (trimmed.isNotEmpty) {
+      await prefs.setBool('questionable', true);
+      await prefs.setBool('explicit', true);
+    } else {
+      // Reverting to the no-key default: drop any stored choices so a
+      // re-added key checks them again.
+      await prefs.remove('questionable');
+      await prefs.remove('explicit');
+    }
+
+    repo.setRatings(_s, _q, _e);
+
+    // The key changes what the search returns, so refresh an already
+    // visible result list right away.
+    if (repo.derpis.isNotEmpty) {
+      repo.newSearch();
+    }
   }
 
   void _saveSearch(String search) async {
@@ -215,8 +226,11 @@ class HomePageState extends State<HomePage> {
   }
 
   /// Applies the pending query/ratings/sort as a fresh search, preserving
-  /// the old behaviour of only re-searching when something changed.
+  /// the old behaviour of only re-searching when something changed. An
+  /// empty query is never sent: the rating clause would be malformed
+  /// server-side and there is nothing to look for.
   void _submitSearch(String text) {
+    if (text.isEmpty) return;
     if (text != repo.query ||
         _s != repo.safe ||
         _q != repo.questionable ||
@@ -229,25 +243,34 @@ class HomePageState extends State<HomePage> {
       setState(() {
         _query = repo.getQuery();
       });
-      repo.newSearch().then((loaded) {
-        if (!loaded && repo.derpis.isEmpty) _showSnack('No results found');
-      });
+      _reactToSearchResult(repo.newSearch());
     }
   }
 
   /// Called when the filter sheet is closed. If the ratings or sorting
   /// changed while it was open, the grid is refreshed with a new search.
+  /// With no query entered yet, toggling the checkboxes or the sorting
+  /// must not send a request.
   void _onFilterSheetClosed() {
+    if (repo.query.isEmpty) return;
     if (_s != repo.safe ||
         _q != repo.questionable ||
         _e != repo.explicit ||
         _sortMethod != repo.sortMethod) {
       repo.sortMethod = _sortMethod;
       repo.setRatings(_s, _q, _e);
-      repo.newSearch().then((loaded) {
-        if (!loaded && repo.derpis.isEmpty) _showSnack('No results found');
-      });
+      _reactToSearchResult(repo.newSearch());
     }
+  }
+
+  void _reactToSearchResult(Future<LoadResult> result) {
+    result.then((value) {
+      if (value == LoadResult.failed) {
+        _showSnack('Search failed');
+      } else if (value != LoadResult.added && repo.derpis.isEmpty) {
+        _showSnack('No results found');
+      }
+    });
   }
 
   void _showSnack(String message) {
@@ -260,6 +283,7 @@ class HomePageState extends State<HomePage> {
 
   bool _isHeaderLoading = false;
   void _setHeaderImage() async {
+    if (_isHeaderLoading) return;
     setState(() {
       _isHeaderLoading = true;
     });
@@ -267,15 +291,19 @@ class HomePageState extends State<HomePage> {
       'chrysalis,solo,transparent background,-webm',
     );
     if (!mounted) return;
-    if (derp == null || (derp.representations.medium ?? '').isEmpty) {
+    final url = derp?.representations.medium ?? '';
+    if (url.isEmpty) {
       setState(() {
         _isHeaderLoading = false;
       });
       _showSnack('Could not load a random header image');
       return;
     }
+    // The old image stays visible (gapless playback) until the new one
+    // has loaded, then they crossfade.
     setState(() {
-      _headerImage = derp.representations.medium;
+      _headerImage = url;
+      _isHeaderLoading = false;
     });
   }
 
@@ -401,20 +429,21 @@ class HomePageState extends State<HomePage> {
                     context: context,
                     builder: (BuildContext context) {
                       return FilterSheet(
+                        hasKey: repo.key.isNotEmpty,
                         safe: _s,
                         safeChanged: (bool value) {
                           _s = value;
-                          _saveRatingPrefs();
+                          _saveRatingChoice('safe', value);
                         },
                         questionable: _q,
                         questionableChanged: (bool value) {
                           _q = value;
-                          _saveRatingPrefs();
+                          _saveRatingChoice('questionable', value);
                         },
                         explicit: _e,
                         explicitChanged: (bool value) {
                           _e = value;
-                          _saveRatingPrefs();
+                          _saveRatingChoice('explicit', value);
                         },
                         quality: _quality,
                         qualityChanged: (Quality q) {
@@ -457,18 +486,13 @@ class HomePageState extends State<HomePage> {
                             SvgPicture.asset('assets/logo.svg'),
                         errorWidget: (context, url, error) =>
                             SvgPicture.asset('assets/logo.svg'),
-                        imageBuilder: (context, imageProvider) {
-                          if (_isHeaderLoading) {
-                            WidgetsBinding.instance.addPostFrameCallback((_) {
-                              if (mounted) {
-                                setState(() => _isHeaderLoading = false);
-                              }
-                            });
-                          }
-                          return Image(image: imageProvider, fit: BoxFit.cover);
-                        },
                         fit: BoxFit.cover,
+                        // Keep the previously shown image while the new
+                        // random one loads, then crossfade quickly from
+                        // it (or from the logo on the first load).
+                        useOldImageOnUrlChange: true,
                         fadeInDuration: Duration(milliseconds: 300),
+                        fadeOutDuration: Duration(milliseconds: 300),
                       );
                     } else {
                       return SvgPicture.asset('assets/logo.svg');
@@ -634,7 +658,10 @@ class HomePageState extends State<HomePage> {
   void showKeySheet() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     if (!mounted) return;
-    showModalBottomSheet<void>(
+    final currentKey = prefs.getString('key')?.trim() ?? '';
+    final keyControl = TextEditingController(text: currentKey);
+
+    await showModalBottomSheet<void>(
       context: context,
       builder: (BuildContext context) {
         return Padding(
@@ -645,11 +672,11 @@ class HomePageState extends State<HomePage> {
             MediaQuery.of(context).viewInsets.bottom,
           ),
           child: TextField(
+            controller: keyControl,
             decoration: InputDecoration(
               border: InputBorder.none,
-              hintText: prefs.getString('key')?.isNotEmpty == true
-                  ? 'API key saved'
-                  : 'Your API key here',
+              labelText: 'API key',
+              hintText: 'Your API key here',
             ),
             onSubmitted: (text) {
               _saveKey(text);
@@ -660,5 +687,9 @@ class HomePageState extends State<HomePage> {
         );
       },
     );
+
+    // Also save when the sheet is dismissed without submitting (e.g. by
+    // tapping outside), so an entered key is never silently lost.
+    _saveKey(keyControl.text);
   }
 }

@@ -15,6 +15,7 @@ class FilterSheet extends StatefulWidget {
     required this.qualityChanged,
     required this.sortMethod,
     required this.sortMethodChanged,
+    this.hasKey = false,
   });
 
   final bool safe;
@@ -30,6 +31,10 @@ class FilterSheet extends StatefulWidget {
 
   final ESortMethod sortMethod;
   final ValueChanged<ESortMethod> sortMethodChanged;
+
+  /// Whether an API key is set. Explicit results can only be requested
+  /// with a key, so the checkbox is disabled without one.
+  final bool hasKey;
 
   @override
   FilterSheetState createState() => FilterSheetState();
@@ -82,13 +87,18 @@ class FilterSheetState extends State<FilterSheet> {
         ),
         CheckboxListTile(
           title: Text('Explicit'),
+          subtitle: widget.hasKey
+              ? null
+              : Text('Requires an API key', style: TextStyle(fontSize: 12.0)),
           value: _explicit,
-          onChanged: (bool? newValue) {
-            setState(() {
-              _explicit = newValue ?? false;
-              widget.explicitChanged(_explicit);
-            });
-          },
+          onChanged: widget.hasKey
+              ? (bool? newValue) {
+                  setState(() {
+                    _explicit = newValue ?? false;
+                    widget.explicitChanged(_explicit);
+                  });
+                }
+              : null,
           dense: true,
         ),
         Row(

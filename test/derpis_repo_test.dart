@@ -38,10 +38,7 @@ void main() {
       });
 
       expect(fake.requestedUrls.single.queryParameters['page'], '1');
-      expect(
-        fake.requestedUrls.single.queryParameters['q'],
-        'chrysalis, (safe)',
-      );
+      expect(fake.requestedUrls.single.queryParameters['q'], 'chrysalis, safe');
     },
   );
 
@@ -106,13 +103,13 @@ void main() {
 
       fake.completeNext(); // Releases the fresh request's response.
       final added = await fresh;
-      expect(added, isTrue);
+      expect(added, LoadResult.added);
       expect(repo.derpis.map((d) => d.id), [200]);
       expect(repo.page, 2);
     });
 
-    expect(fake.requestedUrls[0].queryParameters['q'], 'old query, (safe)');
-    expect(fake.requestedUrls[1].queryParameters['q'], 'new query, (safe)');
+    expect(fake.requestedUrls[0].queryParameters['q'], 'old query, safe');
+    expect(fake.requestedUrls[1].queryParameters['q'], 'new query, safe');
   });
 
   test(
@@ -151,7 +148,7 @@ void main() {
         expect(repo.derpis, isNotEmpty);
 
         final added = await repo.newSearch();
-        expect(added, isFalse);
+        expect(added, LoadResult.failed);
         expect(repo.derpis, isEmpty);
       });
     },

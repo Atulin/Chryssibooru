@@ -15,11 +15,16 @@ const int defaultLimit = 30;
 
 /// Builds the search URL for the given parameters.
 ///
-/// When [s], [q], and [e] are all true (or all false) no rating clause is
-/// appended, matching the behaviour of the original client: all-true means
-/// the user wants everything, all-false means the server default filter
-/// decides. When a [key] is provided it is sent so the user's account
-/// filter applies; without a key the result set is capped to [limit].
+/// Unless [s], [q], and [e] are all true (or all false) a rating clause
+/// restricts the search, matching the behaviour of the original client.
+/// The clause uses the shortest equivalent form: a single selected rating
+/// becomes a plain tag (`safe`), and two selected ratings become a
+/// negation of the missing one (`-safe` is equivalent to
+/// `questionable OR explicit`). The explicit rating can only be selected
+/// when an API [key] is present: the key unlocks the user's account
+/// filter, which is what allows NSFW results to be served at all.
+/// Without a key the result set is capped to [limit]; with a key the
+/// server's per-page default applies.
 String buildQuery(
   String query,
   bool s,
@@ -33,13 +38,23 @@ String buildQuery(
   final sortData = sortMethod.sortData();
   final params = <String, String>{'q': query, 'page': page.toString()};
 
-  if (!((s && q && e) || (!s && !q && !e))) {
-    final ratings = [
-      if (s) 'safe',
-      if (q) 'questionable',
-      if (e) 'explicit',
-    ].join(' OR ');
-    params['q'] = '$query, ($ratings)';
+  final selected = [if (s) 'safe', if (q) 'questionable', if (e) 'explicit'];
+
+  if (!(s && q && e) && !(!s && !q && !e)) {
+    // One rating selected: request it directly. Two selected: exclude
+    // the missing one, which is the shorter equivalent of an OR clause.
+    final String clause;
+    if (selected.length == 1) {
+      clause = selected.single;
+    } else {
+      final missing = [
+        'safe',
+        'questionable',
+        'explicit',
+      ].where((r) => !selected.contains(r)).single;
+      clause = '-$missing';
+    }
+    params['q'] = '$query, $clause';
   }
 
   if (key.isNotEmpty) {
@@ -57,7 +72,8 @@ String buildQuery(
 }
 
 /// Fetches one page of search results. Returns `null` when the search
-/// failed (network error, non-200 response) or returned no images.
+/// failed (network error, non-200 response) and an empty list when it
+/// returned no images.
 Future<List<Derpi>?> searchImages(
   String query,
   bool s,
