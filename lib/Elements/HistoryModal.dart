@@ -1,5 +1,5 @@
 import 'package:chryssibooru/DerpisRepo.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class HistoryModal extends StatefulWidget {

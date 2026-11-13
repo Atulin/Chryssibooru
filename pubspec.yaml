@@ -7,14 +7,18 @@ publish_to: none
 # followed by an optional build number separated by a +.
 # Both the version and the builder number may be overridden in flutter
 # build by specifying --build-name and --build-number, respectively.
-version: 1.7.0
+version: 2.0.0
 
 environment:
-  sdk: ^3.13.0
+  sdk: ^3.14.0
 
 dependencies:
   flutter:
     sdk: flutter
+
+  # The Material design system, decoupled from the Flutter framework
+  # (package:flutter/material.dart is deprecated).
+  material_ui: ^1.11.0
 
   # Image loading with disk cache, progress reporting, and error widgets.
   cached_network_image: ^4.0.7

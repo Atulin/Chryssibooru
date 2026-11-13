@@ -2,7 +2,7 @@ import 'package:chryssibooru/API/v2/API.dart';
 import 'package:chryssibooru/API/v2/ImageList.dart';
 import 'package:chryssibooru/Enums/EQuality.dart';
 import 'package:chryssibooru/Enums/ESortMethod.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Outcome of a [DerpisRepo.loadNextPage] call.
 enum LoadResult {

@@ -1,6 +1,6 @@
 import 'package:chryssibooru/DerpisRepo.dart';
 import 'package:chryssibooru/Views/HomePage.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:provider/provider.dart' as p;
 
 void main() => runApp(MyApp());
@@ -15,13 +15,12 @@ class MyApp extends StatelessWidget {
       child: MaterialApp(
         title: 'Chryssibooru',
         theme: ThemeData(
-          brightness: Brightness.dark,
-          primarySwatch: Colors.teal,
+          colorScheme: ColorScheme.fromSeed(
+            seedColor: Colors.teal,
+            brightness: Brightness.dark,
+          ),
           fontFamily: 'Montserrat',
-          // Material 2 is used intentionally: the app's visual identity is
-          // based on Material 2 component styling (BottomAppBar, Chips,
-          // DropdownButton, Cards).
-          useMaterial3: false,
+          // Material 3 is the default of the material_ui library.
         ),
         home: HomePage(),
       ),

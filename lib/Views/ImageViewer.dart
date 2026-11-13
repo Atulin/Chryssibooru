@@ -3,7 +3,7 @@ import 'package:chryssibooru/API/v2/API.dart';
 import 'package:chryssibooru/DerpisRepo.dart';
 import 'package:chryssibooru/Elements/DetailsSheet.dart';
 import 'package:chryssibooru/Enums/EQuality.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter/services.dart';
 import 'package:percent_indicator/linear_percent_indicator.dart';
 import 'package:provider/provider.dart';

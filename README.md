@@ -27,8 +27,9 @@ Derpibooru client made with Flutter
 
 The application targets a current stable Flutter toolchain.
 
-* **Flutter 3.47.x** (Dart 3.13.x, included in the Flutter bundle)
-* Android: **Gradle 9.9.1**, **AGP 9.1**, **Kotlin 2.4**, compile/target SDK from
+* **Flutter 3.50.x** (Dart 3.14.x, included in the Flutter bundle)
+* Material design from the decoupled **material_ui** package (Material 3)
+* Android: **Gradle 9.9.1**, **AGP 9.3.1**, **Kotlin 2.4**, compile/target SDK from
   the Flutter defaults, minSdk from the Flutter defaults
 * iOS: deployment target **iOS 15**
 * Windows: CMake 3.14+ (runner from the current Flutter template)
@@ -58,6 +59,8 @@ dart run flutter_launcher_icons
 <!-- release-notes:start -->
 * **12.11.2026**
   * Modernized the whole codebase: null-safe Dart on Flutter 3.47 / Dart 3.13
+  * Migrated to Flutter 3.50 / Dart 3.14 and the decoupled `material_ui`
+    library with Material 3 styling
   * Replaced dead and abandoned packages: `flutter_advanced_networkimage` →
     `cached_network_image`, `share` → `share_plus`, `image_downloader` →
     `http` + `gal`, `package_info` → `package_info_plus`

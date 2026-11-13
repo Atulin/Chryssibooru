@@ -1,5 +1,5 @@
 import 'package:chryssibooru/Enums/EQuality.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:chryssibooru/Enums/ESortMethod.dart';
 
 class FilterSheet extends StatefulWidget {
