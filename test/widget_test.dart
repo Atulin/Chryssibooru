@@ -175,6 +175,94 @@ void main() {
     }
   });
 
+  testWidgets('scrolling to the end of the grid loads the next page', (
+    tester,
+  ) async {
+    // Page 1: a full page of images, enough to make the grid scrollable.
+    fake.enqueue(
+      searchResponseBody(
+        List.generate(30, (i) => fixtureImage(id: i + 1), growable: false),
+      ),
+    );
+    // Page 2.
+    fake.enqueue(searchResponseBody([fixtureImage(id: 100)]));
+
+    await pumpApp(tester);
+
+    await tester.enterText(find.byType(TextField), 'chrysalis');
+    await tester.testTextInput.receiveAction(TextInputAction.done);
+    await tester.pump(const Duration(seconds: 1));
+
+    expect(fake.requestedUrls, hasLength(1));
+    expect(fake.requestedUrls.single.queryParameters['page'], '1');
+
+    // Scroll to the very end of the grid.
+    await tester.fling(find.byType(GridView), const Offset(0, -5000), 20000);
+    await tester.pump(const Duration(milliseconds: 500));
+    await tester.pump(const Duration(seconds: 1));
+
+    // Page 2 must have been requested by scrolling alone (the harness
+    // may fire additional attempts once the queue runs dry; the repo
+    // treats those as retryable network errors).
+    expect(
+      fake.requestedUrls.any((u) => u.queryParameters['page'] == '2'),
+      isTrue,
+    );
+
+    // The grid now knows about the images from the second page too.
+    final gridView = tester.widget<GridView>(find.byType(GridView));
+    final delegate = gridView.childrenDelegate as SliverChildBuilderDelegate;
+    expect(delegate.childCount, 31);
+  });
+
+  testWidgets('the search bar stays above the keyboard when typing', (
+    tester,
+  ) async {
+    final original = apiHttpClient;
+    apiHttpClient = FakeClient();
+    try {
+      await pumpApp(tester);
+
+      // Simulate the keyboard being open (bottom inset of 300px).
+      tester.view.viewInsets = FakeViewPadding(bottom: 300);
+      await tester.pump();
+
+      // The BottomAppBar must be lifted so its bottom edge sits exactly
+      // on top of the keyboard. The fake inset is in physical pixels
+      // (default test DPR is 3.0 → 100 logical pixels).
+      final barRect = tester.getRect(find.byType(BottomAppBar));
+      final keyboardTop = 600 - 300 / 3.0;
+      expect(barRect.bottom, closeTo(keyboardTop, 1));
+    } finally {
+      apiHttpClient = original;
+      tester.view.viewInsets = FakeViewPadding.zero;
+    }
+  });
+
+  testWidgets('a loading indicator shows while the search is in flight', (
+    tester,
+  ) async {
+    fake.enqueue(searchResponseBody([fixtureImage(id: 1)]), manual: true);
+
+    await pumpApp(tester);
+
+    await tester.enterText(find.byType(TextField), 'chrysalis');
+    await tester.testTextInput.receiveAction(TextInputAction.done);
+    await tester.pump();
+
+    // While the fetch is in flight and nothing has loaded yet, the logo
+    // is accompanied by a progress indicator.
+    expect(find.byType(CircularProgressIndicator), findsOneWidget);
+    expect(find.byType(GridView), findsNothing);
+
+    fake.completeNext();
+    await tester.pump(const Duration(seconds: 1));
+
+    // Once results arrive the indicator disappears and the grid shows.
+    expect(find.byType(CircularProgressIndicator), findsNothing);
+    expect(find.byType(GridView), findsOneWidget);
+  });
+
   testWidgets('changing rating filters refreshes the search when the sheet '
       'closes', (tester) async {
     fake.enqueue(searchResponseBody([fixtureImage(id: 1)]));

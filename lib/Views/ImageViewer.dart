@@ -325,12 +325,15 @@ class ImageViewerState extends State<ImageViewer> with WidgetsBindingObserver {
       panEnabled: _isPageViewDisabled,
       child: CachedNetworkImage(
         imageUrl: url,
+        // No fade transitions: when swiping, media should appear
+        // instantly once it is available.
+        fadeInDuration: Duration.zero,
+        fadeOutDuration: Duration.zero,
         placeholder: (context, url) =>
             Image(image: AssetImage('assets/logo-medium.png')),
         errorWidget: (context, url, error) =>
             Image(image: AssetImage('assets/logo-medium.png')),
         fit: BoxFit.contain,
-        fadeInDuration: Duration(milliseconds: 150),
       ),
     );
   }

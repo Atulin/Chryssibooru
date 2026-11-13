@@ -30,8 +30,8 @@ void main() {
       repo.query = 'chrysalis';
 
       await withFakeClient(fake, () async {
-        final added = await repo.loadNextPage();
-        expect(added, isTrue);
+        final result = await repo.loadNextPage();
+        expect(result, LoadResult.added);
         expect(repo.derpis.map((d) => d.id), [1]);
         expect(repo.page, 2);
         expect(repo.loaded, isTrue);
@@ -73,10 +73,10 @@ void main() {
       await withFakeClient(fake, () async {
         final first = repo.loadNextPage();
         final second = await repo.loadNextPage();
-        expect(second, isFalse, reason: 'fetch already in flight');
+        expect(second, LoadResult.busy, reason: 'fetch already in flight');
 
         fake.completeNext();
-        expect(await first, isTrue);
+        expect(await first, LoadResult.added);
         expect(repo.derpis.map((d) => d.id), [1]);
         // Only one request was actually made.
         expect(fake.requestedUrls, hasLength(1));
@@ -125,13 +125,13 @@ void main() {
       final repo = DerpisRepo();
 
       await withFakeClient(fake, () async {
-        expect(await repo.loadNextPage(), isTrue);
-        expect(await repo.loadNextPage(), isFalse);
+        expect(await repo.loadNextPage(), LoadResult.added);
+        expect(await repo.loadNextPage(), LoadResult.ended);
         expect(repo.endOfResults, isTrue);
 
         // Further calls do not hit the network again.
         final requests = fake.requestedUrls.length;
-        expect(await repo.loadNextPage(), isFalse);
+        expect(await repo.loadNextPage(), LoadResult.ended);
         expect(fake.requestedUrls.length, requests);
       });
     },
@@ -184,6 +184,26 @@ void main() {
     expect(repo.getImageOfQuality(Quality.Medium, 0), endsWith('medium.png'));
     expect(repo.getImageOfQuality(Quality.High, 0), endsWith('large.png'));
     expect(repo.getImageOfQuality(Quality.Source, 0), endsWith('full.png'));
+  });
+
+  test('loading state is surfaced while a page is in flight', () async {
+    final fake = FakeClient();
+    fake.enqueue(searchResponseBody([fixtureImage(id: 1)]), manual: true);
+    final repo = DerpisRepo();
+    var sawLoading = false;
+    repo.addListener(() {
+      if (!repo.loaded) sawLoading = true;
+    });
+
+    await withFakeClient(fake, () async {
+      final fetch = repo.loadNextPage();
+      expect(repo.loaded, isFalse);
+      fake.completeNext();
+      expect(await fetch, LoadResult.added);
+      expect(repo.loaded, isTrue);
+    });
+
+    expect(sawLoading, isTrue);
   });
 
   test('addTag and removeTag manipulate the query string', () {

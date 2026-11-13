@@ -4,6 +4,25 @@ import 'package:chryssibooru/Enums/EQuality.dart';
 import 'package:chryssibooru/Enums/ESortMethod.dart';
 import 'package:flutter/material.dart';
 
+/// Outcome of a [DerpisRepo.loadNextPage] call.
+enum LoadResult {
+  /// New images were appended.
+  added,
+
+  /// Skipped because another fetch is already running or a previous
+  /// failure needs a retry trigger; not an error.
+  busy,
+
+  /// The search has no more results.
+  ended,
+
+  /// The request failed (network/server error); it can be retried.
+  failed,
+
+  /// A newer search superseded this request; results were discarded.
+  stale,
+}
+
 /// Repository that handles all of the fetched [Derpi]s.
 ///
 /// It guards against duplicate concurrent pagination requests, deduplicates
@@ -47,13 +66,15 @@ class DerpisRepo extends ChangeNotifier {
   /// Loads the next page of results according to the query and filter
   /// parameters.
   ///
-  /// Returns true when new images were added to [derpis]. Concurrent calls
-  /// are ignored while a fetch is already running.
-  Future<bool> loadNextPage() async {
-    if (_isFetching || endOfResults) return false;
+  /// Concurrent calls while a fetch is already running are reported as
+  /// [LoadResult.busy] and perform no request.
+  Future<LoadResult> loadNextPage() async {
+    if (_isFetching) return LoadResult.busy;
+    if (endOfResults) return LoadResult.ended;
 
     _isFetching = true;
     loaded = false;
+    notifyListeners(); // Surface the loading state immediately.
     final token = ++_requestToken;
     final pageToFetch = page;
 
@@ -70,7 +91,7 @@ class DerpisRepo extends ChangeNotifier {
     if (token != _requestToken) {
       // A newer search superseded this request; discard the results and
       // leave all state to the newer request.
-      return false;
+      return LoadResult.stale;
     }
 
     _isFetching = false;
@@ -80,7 +101,7 @@ class DerpisRepo extends ChangeNotifier {
       // Network error or server error: the page can be retried on the
       // next scroll event, so end-of-results is not assumed.
       notifyListeners();
-      return false;
+      return LoadResult.failed;
     }
 
     if (newImages.isNotEmpty) {
@@ -88,12 +109,12 @@ class DerpisRepo extends ChangeNotifier {
       derpis.addAll(newImages.where((d) => !existing.contains(d.id)));
       notifyListeners();
       page++;
-      return true;
+      return LoadResult.added;
     }
 
     endOfResults = true;
     notifyListeners();
-    return false;
+    return LoadResult.ended;
   }
 
   /// Starts a fresh search from page 1, clearing the current results and
@@ -106,7 +127,7 @@ class DerpisRepo extends ChangeNotifier {
     page = 1;
     derpis = [];
     notifyListeners();
-    return loadNextPage();
+    return (await loadNextPage()) == LoadResult.added;
   }
 
   /// Clears the current results and reloads page 1 for the existing

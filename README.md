@@ -81,6 +81,11 @@ dart run flutter_launcher_icons
     splash screen
   * Added regression tests for parsing, query building, pagination
     behaviour, and the main screens
+  * UX fixes from testing: the search bar now stays above the keyboard,
+    grid pagination triggers reliably on reaching the end (and shows a
+    notice when a page load fails), a loading indicator is shown while a
+    search or the next page is loading, and images in the slideshow view
+    appear instantly instead of fading in
 
 * **09.11.2020**
   * Fixed history and faves not updating the search query

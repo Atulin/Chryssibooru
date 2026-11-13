@@ -62,7 +62,6 @@ class HomePageState extends State<HomePage> {
   @override
   void initState() {
     super.initState();
-    _scrollController.addListener(_loadDerpisListener);
     _getCacheSize();
     _getCurrentVersion();
     _getRatingPrefs();
@@ -78,12 +77,30 @@ class HomePageState extends State<HomePage> {
     super.dispose();
   }
 
-  void _loadDerpisListener() {
-    if (_scrollController.position.maxScrollExtent - _scrollController.offset <
-            400.0 &&
-        !_scrollController.position.outOfRange) {
-      repo.loadNextPage();
+  /// Loads the next page whenever the grid is scrolled near its end. The
+  /// check also fires during overscroll: when the user is flung past the
+  /// end they are effectively asking for more content. Concurrent or
+  /// repeated requests are filtered by [DerpisRepo.loadNextPage] itself.
+  bool _loadDerpisListener(ScrollNotification notification) {
+    final metrics = notification.metrics;
+    if (metrics.maxScrollExtent - metrics.pixels < 400.0) {
+      repo.loadNextPage().then((result) {
+        if (result == LoadResult.failed && repo.derpis.isNotEmpty) {
+          _showLoadError();
+        }
+      });
     }
+    return false;
+  }
+
+  /// Throttled failure notice for pagination, so repeated scroll events
+  /// during one failed fetch don't stack up snackbars.
+  DateTime _lastLoadError = DateTime.fromMillisecondsSinceEpoch(0);
+  void _showLoadError() {
+    final now = DateTime.now();
+    if (now.difference(_lastLoadError) < const Duration(seconds: 3)) return;
+    _lastLoadError = now;
+    _showSnack('Loading more images failed');
   }
 
   void _getCurrentVersion() async {
@@ -276,48 +293,75 @@ class HomePageState extends State<HomePage> {
             Expanded(
               child: () {
                 if (repo.derpis.isEmpty) {
-                  return Image(image: AssetImage('assets/logo-medium.png'));
-                } else {
-                  return GridView.builder(
-                    controller: _scrollController,
-                    itemCount: repo.derpis.length,
-                    scrollCacheExtent: ScrollCacheExtent.viewport(0.5),
-                    physics: BouncingScrollPhysics(),
-                    gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
-                      maxCrossAxisExtent: 200.0,
-                      childAspectRatio: 1.0,
-                      crossAxisSpacing: 4.0,
-                      mainAxisSpacing: 4.0,
+                  return Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Image(image: AssetImage('assets/logo-medium.png')),
+                        if (!repo.loaded) ...[
+                          SizedBox(height: 16.0),
+                          CircularProgressIndicator(),
+                        ],
+                      ],
                     ),
-                    itemBuilder: (BuildContext c, int index) {
-                      return GestureDetector(
-                        onTap: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => ImageViewer(index: index),
-                            ),
-                          );
-                        },
-                        child: Card(
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.all(
-                              Radius.circular(10.0),
-                            ),
-                          ),
-                          elevation: 5,
-                          child: Padding(
-                            padding: EdgeInsets.all(0.2),
-                            child: ClipRRect(
-                              borderRadius: BorderRadius.all(
-                                Radius.circular(10.0),
-                              ),
-                              child: _gridThumb(repo.derpis[index]),
-                            ),
+                  );
+                } else {
+                  return Column(
+                    children: [
+                      Expanded(
+                        child: NotificationListener<ScrollNotification>(
+                          onNotification: _loadDerpisListener,
+                          child: GridView.builder(
+                            controller: _scrollController,
+                            itemCount: repo.derpis.length,
+                            scrollCacheExtent: ScrollCacheExtent.viewport(0.5),
+                            physics: BouncingScrollPhysics(),
+                            gridDelegate:
+                                SliverGridDelegateWithMaxCrossAxisExtent(
+                                  maxCrossAxisExtent: 200.0,
+                                  childAspectRatio: 1.0,
+                                  crossAxisSpacing: 4.0,
+                                  mainAxisSpacing: 4.0,
+                                ),
+                            itemBuilder: (BuildContext c, int index) {
+                              return GestureDetector(
+                                onTap: () {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) =>
+                                          ImageViewer(index: index),
+                                    ),
+                                  );
+                                },
+                                child: Card(
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.all(
+                                      Radius.circular(10.0),
+                                    ),
+                                  ),
+                                  elevation: 5,
+                                  child: Padding(
+                                    padding: EdgeInsets.all(0.2),
+                                    child: ClipRRect(
+                                      borderRadius: BorderRadius.all(
+                                        Radius.circular(10.0),
+                                      ),
+                                      child: _gridThumb(repo.derpis[index]),
+                                    ),
+                                  ),
+                                ),
+                              );
+                            },
                           ),
                         ),
-                      );
-                    },
+                      ),
+                      if (!repo.loaded)
+                        LinearProgressIndicator(
+                          minHeight: 2.0,
+                          color: Colors.teal,
+                        ),
+                    ],
                   );
                 }
               }(),
@@ -325,67 +369,73 @@ class HomePageState extends State<HomePage> {
           ],
         ),
       ),
-      bottomNavigationBar: BottomAppBar(
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: <Widget>[
-            IconButton(
-              icon: Icon(Icons.menu),
-              onPressed: () {
-                _scaffoldKey.currentState?.openDrawer();
-              },
-            ),
-            Expanded(
-              child: TextField(
-                controller: searchControl,
-                decoration: InputDecoration(
-                  border: InputBorder.none,
-                  hintText: 'Please enter a search term',
-                ),
-                onSubmitted: _submitSearch,
+      // The keyboard covers the bottom bar on current Android versions
+      // (edge-to-edge), so it is lifted above the keyboard manually.
+      resizeToAvoidBottomInset: false,
+      bottomNavigationBar: Transform.translate(
+        offset: Offset(0.0, -1 * MediaQuery.of(context).viewInsets.bottom),
+        child: BottomAppBar(
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: <Widget>[
+              IconButton(
+                icon: Icon(Icons.menu),
+                onPressed: () {
+                  _scaffoldKey.currentState?.openDrawer();
+                },
               ),
-            ),
-            IconButton(
-              icon: Icon(Icons.filter_list),
-              onPressed: () async {
-                await showModalBottomSheet<void>(
-                  context: context,
-                  builder: (BuildContext context) {
-                    return FilterSheet(
-                      safe: _s,
-                      safeChanged: (bool value) {
-                        _s = value;
-                        _saveRatingPrefs();
-                      },
-                      questionable: _q,
-                      questionableChanged: (bool value) {
-                        _q = value;
-                        _saveRatingPrefs();
-                      },
-                      explicit: _e,
-                      explicitChanged: (bool value) {
-                        _e = value;
-                        _saveRatingPrefs();
-                      },
-                      quality: _quality,
-                      qualityChanged: (Quality q) {
-                        _quality = q;
-                        _saveQualityPrefs();
-                      },
-                      sortMethod: _sortMethod,
-                      sortMethodChanged: (ESortMethod s) {
-                        setState(() {
-                          _sortMethod = s;
-                          _saveSortMethodPrefs();
-                        });
-                      },
-                    );
-                  },
-                );
-                _onFilterSheetClosed();
-              },
-            ),
-          ],
+              Expanded(
+                child: TextField(
+                  controller: searchControl,
+                  decoration: InputDecoration(
+                    border: InputBorder.none,
+                    hintText: 'Please enter a search term',
+                  ),
+                  onSubmitted: _submitSearch,
+                ),
+              ),
+              IconButton(
+                icon: Icon(Icons.filter_list),
+                onPressed: () async {
+                  await showModalBottomSheet<void>(
+                    context: context,
+                    builder: (BuildContext context) {
+                      return FilterSheet(
+                        safe: _s,
+                        safeChanged: (bool value) {
+                          _s = value;
+                          _saveRatingPrefs();
+                        },
+                        questionable: _q,
+                        questionableChanged: (bool value) {
+                          _q = value;
+                          _saveRatingPrefs();
+                        },
+                        explicit: _e,
+                        explicitChanged: (bool value) {
+                          _e = value;
+                          _saveRatingPrefs();
+                        },
+                        quality: _quality,
+                        qualityChanged: (Quality q) {
+                          _quality = q;
+                          _saveQualityPrefs();
+                        },
+                        sortMethod: _sortMethod,
+                        sortMethodChanged: (ESortMethod s) {
+                          setState(() {
+                            _sortMethod = s;
+                            _saveSortMethodPrefs();
+                          });
+                        },
+                      );
+                    },
+                  );
+                  _onFilterSheetClosed();
+                },
+              ),
+            ],
+          ),
         ),
       ),
 
