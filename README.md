@@ -8,6 +8,21 @@ Derpibooru client made with Flutter
 ![License](https://img.shields.io/github/license/Atulin/Chryssibooru.svg)
 ![Latest release](https://img.shields.io/github/release/Atulin/Chryssibooru.svg)
 
+## Screenshots
+
+| Main grid view | Full image view | Image details | App drawer |
+| -------------- | --------------- | ------------- | ---------- |
+| ![Main grid view](screenshots/gridview.jpg) | ![Full image view](screenshots/fullview.jpg) | ![Image details](screenshots/details.jpg) | ![App drawer](screenshots/drawer.jpg) |
+
+## Known bugs
+
+* Very recent WebM uploads have no animated `.gif` preview on Derpibooru's
+  CDN, so those grid tiles show the app logo instead of a preview. Older
+  WebMs still show their animated preview, as before.
+* An error screen might sometimes flash briefly when swiping between video
+  files. It soon disappears, though, and the video loads fine. Happens only
+  on slower devices or when loading large files.
+
 ## Development
 
 The application targets a current stable Flutter toolchain.
@@ -34,29 +49,6 @@ App icons are generated from `assets/logo-xlarge-sq.png` with:
 ```sh
 dart run flutter_launcher_icons
 ```
-
-### Supported platforms
-
-| Platform | Status |
-| -------- | ------ |
-| Android  | Actively maintained, verified with `flutter build apk --debug` |
-| iOS      | Runner modernized to the current Flutter template; not buildable from the current development environment (Linux), unverified |
-| Windows  | Runner modernized to the current Flutter template; not buildable from the current development environment (Linux), unverified |
-
-## Known bugs
-
-* Very recent WebM uploads have no animated `.gif` preview on Derpibooru's
-  CDN, so those grid tiles show the app logo instead of a preview. Older
-  WebMs still show their animated preview, as before.
-* An error screen might sometimes flash briefly when swiping between video
-  files. It soon disappears, though, and the video loads fine. Happens only
-  on slower devices or when loading large files.
-
-## Screenshots
-
-| Main grid view | Full image view | Image details | App drawer |
-| -------------- | --------------- | ------------- | ---------- |
-| ![Main grid view](screenshots/gridview.jpg) | ![Full image view](screenshots/fullview.jpg) | ![Image details](screenshots/details.jpg) | ![App drawer](screenshots/drawer.jpg) |
 
 ## Changelog
 
