@@ -52,6 +52,10 @@ dart run flutter_launcher_icons
 
 ## Changelog
 
+<!-- Release notes for GitHub releases are the newest changelog entry
+     between the release-notes markers below. Move both markers down when
+     adding a new entry. -->
+<!-- release-notes:start -->
 * **12.11.2026**
   * Modernized the whole codebase: null-safe Dart on Flutter 3.47 / Dart 3.13
   * Replaced dead and abandoned packages: `flutter_advanced_networkimage` →
@@ -78,6 +82,7 @@ dart run flutter_launcher_icons
     notice when a page load fails), a loading indicator is shown while a
     search or the next page is loading, and images in the slideshow view
     appear instantly instead of fading in
+<!-- release-notes:end -->
 
 * **09.11.2020**
   * Fixed history and faves not updating the search query

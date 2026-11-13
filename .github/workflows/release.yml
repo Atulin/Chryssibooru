@@ -1,0 +1,154 @@
+# Builds the release artifacts and publishes a GitHub release.
+#
+# Triggered by pushing a `v*` tag (see the `release` task in
+# taskfile.yml), or manually via workflow_dispatch with a tag name.
+#
+# Release notes are the newest changelog entry in README.md, delimited by
+# the `release-notes:start` / `release-notes:end` HTML comments.
+
+name: Release
+
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Tag to release, e.g. v1.6.3'
+        required: true
+
+permissions:
+  contents: write
+
+env:
+  FLUTTER_VERSION: '3.47.8'
+
+jobs:
+  build-android:
+    name: Build Android APK
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: stable
+          cache: true
+      - run: flutter pub get
+      - run: flutter analyze
+      - run: flutter test
+      - run: flutter build apk --release
+      - name: Rename APK
+        run: |
+          VERSION=$(sed -n 's/^version: \([0-9.]*\).*/\1/p' pubspec.yaml)
+          cp build/app/outputs/flutter-apk/app-release.apk \
+            "chryssibooru-${VERSION}-android.apk"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: android
+          path: chryssibooru-*-android.apk
+          if-no-files-found: error
+
+  build-windows:
+    name: Build Windows exe
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: stable
+          cache: true
+      - run: flutter pub get
+      - run: flutter analyze
+      - run: flutter test
+      - run: flutter build windows --release
+      - name: Bundle the release folder
+        shell: pwsh
+        run: |
+          $version = (Select-String -Path pubspec.yaml `
+            -Pattern '^version:\s*([0-9.]+)').Matches.Groups[1].Value
+          Compress-Archive `
+            -Path "build/windows/x64/runner/Release/*" `
+            -DestinationPath "chryssibooru-$version-windows.zip"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: windows
+          path: chryssibooru-*-windows.zip
+          if-no-files-found: error
+
+  build-ios:
+    name: Build iOS IPA (unsigned)
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: stable
+          cache: true
+      - run: flutter pub get
+      - run: flutter analyze
+      - run: flutter test
+      # No signing certificates are available in CI, so the app bundle is
+      # built without codesigning and packaged into an unsigned IPA that
+      # can be signed on-device or on a PC with Sideloadly / AltStore.
+      - run: flutter build ios --release --no-codesign
+      - name: Package the unsigned IPA
+        run: |
+          VERSION=$(sed -n 's/^version: \([0-9.]*\).*/\1/p' pubspec.yaml)
+          mkdir -p build/ios/Payload
+          cp -r build/ios/iphoneos/Runner.app build/ios/Payload/
+          cd build/ios
+          zip -qry "chryssibooru-${VERSION}-ios-unsigned.ipa" Payload
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ios
+          path: build/ios/chryssibooru-*-ios-unsigned.ipa
+          if-no-files-found: error
+
+  release:
+    name: Publish GitHub release
+    needs: [build-android, build-windows, build-ios]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          path: dist
+          merge-multiple: true
+      - name: Extract release notes from README
+        run: |
+          # Everything between the release-notes markers (markers excluded).
+          awk '
+            /<!-- release-notes:end -->/   { f = 0 }
+            f                              { print }
+            /<!-- release-notes:start -->/ { f = 1 }
+          ' README.md > notes.md
+          {
+            echo ''
+            echo '---'
+            echo ''
+            echo '* The Android APK is signed with a debug key (no release'
+            echo '  keystore is available in this repository) — install it over'
+            echo '  an existing debug-signed build, or uninstall first.'
+            echo '* The iOS IPA is unsigned; install it with Sideloadly,'
+            echo '  AltStore, or TrollStore, which sign it with your own'
+            echo '  Apple ID.'
+          } >> notes.md
+          cat notes.md
+      - name: Determine tag
+        run: |
+          TAG='${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref_name }}'
+          echo "TAG=$TAG" >> "$GITHUB_ENV"
+      - uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ env.TAG }}
+          name: ${{ env.TAG }}
+          body_path: notes.md
+          files: dist/*
+          fail_on_unmatched_files: true
